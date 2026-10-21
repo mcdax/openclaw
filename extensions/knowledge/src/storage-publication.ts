@@ -79,6 +79,7 @@ export class StoragePublication extends StorageJournal {
       throw new Error("Invalid structured write input.");
     }
     // Unified preparation only after validating the operation-specific closed contract.
+    // SAFETY: Check above validated the payload against the operation-specific contract.
     const input = payload as SavePage & ClaimInput & RelationshipInput;
     access.assertCurrent();
     if (input.expectedVaultId && input.expectedVaultId !== this.config.vaultId) {
@@ -279,6 +280,7 @@ export class StoragePublication extends StorageJournal {
       };
     }
     // Legacy approval metadata has no meaning; remove it on the next journaled save.
+    // SAFETY: record metadata is parsed frontmatter, a plain object keyed by field name.
     delete (metadata as Record<string, unknown>).acceptance;
     const portable = [
       ...Object.keys(RecordAnnotations.properties),
@@ -295,7 +297,9 @@ export class StoragePublication extends StorageJournal {
           : []),
     ];
     for (const key of portable) {
+      // SAFETY: validated inputs and frontmatter metadata are plain objects keyed by field name.
       if ((input as Record<string, unknown>)[key] !== undefined) {
+        // SAFETY: validated inputs and frontmatter metadata are plain objects keyed by field name.
         (metadata as Record<string, unknown>)[key] = (input as Record<string, unknown>)[key];
       }
     }
@@ -350,6 +354,7 @@ export class StoragePublication extends StorageJournal {
         "title",
         "revision",
         "updated_at",
+        // SAFETY: validated inputs are plain objects keyed by field name.
         ...portable.filter((field) => (input as Record<string, unknown>)[field] !== undefined),
         ...(input.fields !== undefined ? ["fields"] : []),
         ...(input.source
@@ -360,6 +365,7 @@ export class StoragePublication extends StorageJournal {
       ]) {
         doc.set(
           key,
+          // SAFETY: record metadata is parsed frontmatter, a plain object keyed by field name.
           doc.createNode((metadata as Record<string, unknown>)[key], {
             aliasDuplicateObjects: false,
           }),

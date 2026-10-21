@@ -102,9 +102,11 @@ export class StorageIngestion extends StorageLifecycle {
           value.continuity = value.continuity.map((c) => ({ ...c, id: resolve(c.id) }));
         }
         if (value.identity && typeof value.identity === "object") {
+          // SAFETY: identity is a non-null object, checked above; Check validates the resolved payload.
           const identity = value.identity as { candidates?: { id: string }[] };
           if (identity.candidates) {
             identity.candidates = identity.candidates.map((c) =>
+              // SAFETY: batch references resolve to record IDs, which are strings.
               Object.assign(c, { id: resolve(c.id) as string }),
             );
           }
@@ -113,6 +115,7 @@ export class StorageIngestion extends StorageLifecycle {
         if (typeof value.body === "string") {
           value.body = value.body.replace(
             /\[\[@([a-z][a-z0-9_-]{0,39})(\|[^\]\n]+)?\]\]/g,
+            // SAFETY: batch references resolve to record IDs, which are strings.
             (_, key, label) => `[[${resolve("@" + key) as string}${label ?? ""}]]`,
           );
         }
@@ -127,6 +130,7 @@ export class StorageIngestion extends StorageLifecycle {
         if (!Check(schema, payload)) {
           throw new Error("Invalid resolved payload for batch item " + item.key);
         }
+        // SAFETY: Check above validated the payload against this item's operation schema.
         const write = payload as SavePage & ClaimInput & RelationshipInput;
         if (
           Boolean(write.id) !== Boolean(write.expectedHash && write.expectedRevision) ||
@@ -148,6 +152,7 @@ export class StorageIngestion extends StorageLifecycle {
       if (new Set(records.map((r) => r.path)).size !== records.length) {
         throw new Error("Batch record path collision.");
       }
+      // SAFETY: every part's artifacts are a record of file contents keyed by path.
       const artifacts = Object.assign({}, ...parts.map((p) => p.artifacts)) as Record<
         string,
         string
@@ -396,6 +401,7 @@ export class StorageIngestion extends StorageLifecycle {
           // A changed or conflicting claim stays unlinked; the next pass re-plans it.
           if (
             /authority|reloaded|assignment changed|disabled|identity or storage/i.test(
+              // SAFETY: publication failures are Error instances.
               (e as Error).message,
             )
           ) {

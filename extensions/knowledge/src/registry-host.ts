@@ -27,6 +27,7 @@ export function serveRegistry(port: MessagePort, stateRoot: string) {
   try {
     registry = new StoreRegistry(stateRoot);
   } catch (e) {
+    // SAFETY: registry opening throws Error instances (filesystem, SQLite or recovery errors).
     failure = e as Error;
   }
   port.on("message", (request: RegistryRequest) => {
@@ -34,6 +35,7 @@ export function serveRegistry(port: MessagePort, stateRoot: string) {
       if (!registry) {
         throw failure!;
       }
+      // SAFETY: registry requests name only RegistryOperations methods, sent by RegistryClient.
       const run = registry[request.op] as (...args: unknown[]) => unknown;
       port.postMessage({
         id: request.id,

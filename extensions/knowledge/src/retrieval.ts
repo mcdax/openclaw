@@ -97,6 +97,7 @@ export function eligible(data: Snapshot, withdrawn = new Set<string>(), historic
 }
 function filtered(data: Snapshot, records: LoadedRecord[], input: LookupInput | SearchInput) {
   const types = input.type ? expandTypes(data.ontology, input.type) : null;
+  // SAFETY: temporalPredicate reads only optional TimeFilter fields; a lookup without them matches all.
   const timeMatches = temporalPredicate(input as SearchInput);
   return records.filter(
     (r) =>

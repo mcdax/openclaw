@@ -35,8 +35,10 @@ export class RegistryClient {
       worker.postMessage({ id, op, args } satisfies RegistryRequest, []);
     });
     if (value && typeof value === "object" && "bindings" in value && "stores" in value) {
+      // SAFETY: only snapshot-returning registry operations answer with both bindings and stores.
       this.current = value as RegistrySnapshot;
     }
+    // SAFETY: the registry worker answers each operation with that operation's return value.
     return value as ReturnType<RegistryOperations[Op]>;
   }
   /** Load (or reload) published facts. */

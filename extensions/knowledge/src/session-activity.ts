@@ -143,6 +143,7 @@ export function sessionActivity(
         sequence: before,
         at: String(row.at),
         operation: String(row.operation),
+        // SAFETY: appendActivity writes only the read and write actions.
         action: row.action as "read" | "write",
         id: r.id,
         title: r.title.slice(0, 200),
@@ -168,8 +169,10 @@ export function returnedRecords(value: unknown): { id: string; revision: number 
       }
       return;
     }
+    // SAFETY: v is a non-null object, checked above.
     const o = v as Record<string, unknown>;
     if (typeof o.id === "string" && Number.isInteger(o.revision)) {
+      // SAFETY: Number.isInteger above proves revision is a number.
       records.set(o.id, { id: o.id, revision: o.revision as number });
     }
     for (const key of [

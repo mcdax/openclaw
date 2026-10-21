@@ -4,6 +4,7 @@ import { registerHooks } from "node:module";
 import { parentPort, workerData } from "node:worker_threads";
 import { usePluginFilesLocation, type PluginFilesLocation } from "./plugin-files.js";
 
+// SAFETY: registry-client.ts constructs this worker with exactly this workerData shape.
 const data = workerData as {
   sdk: Record<string, string>;
   files: PluginFilesLocation;

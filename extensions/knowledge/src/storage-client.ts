@@ -56,6 +56,7 @@ export class StorageClient {
     const worker = this.start(),
       id = ++this.nextId;
     return new Promise<Output<Op>>((resolve, reject) => {
+      // SAFETY: each call resolves with the output type of the operation it sent.
       this.calls.set(id, { access, resolve: resolve as (value: unknown) => void, reject });
       // Keep the process alive only while work is outstanding.
       worker.ref();

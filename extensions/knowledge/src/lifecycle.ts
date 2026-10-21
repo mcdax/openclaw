@@ -59,6 +59,7 @@ export function lifecycleRecord(
     "lifecycle_change",
     ...(metadata.superseded_by ? ["superseded_by"] : []),
   ]) {
+    // SAFETY: record metadata is parsed frontmatter, a plain object keyed by field name.
     doc.set(key, (metadata as Record<string, unknown>)[key]);
   }
   const raw = `---\n${doc.toString()}---\n${previous.body}`;
@@ -148,6 +149,7 @@ export function applyLifecycleGuards(db: DatabaseSync, records: LoadedRecord[], 
       r.metadata = {
         ...r.metadata,
         ...JSON.parse(String(guard.metadata)),
+        // SAFETY: lifecycle guards store only the withdrawn and superseded Envelope lifecycles.
         lifecycle: r.lifecycle as Envelope["lifecycle"],
       };
     }

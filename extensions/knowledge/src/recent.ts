@@ -347,6 +347,7 @@ export function recentActivity(
       at: row.at,
       kind: row.kind ?? current!.kind,
       type: row.type ?? current!.type,
+      // SAFETY: the recent query emits only the RecentOutput change labels.
       change: row.change as Item["change"],
     };
     if (item.change === "corrected" || item.change === "withdrawn") {

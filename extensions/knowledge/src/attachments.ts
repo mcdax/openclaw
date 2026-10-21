@@ -86,6 +86,7 @@ export function attachChunk(
     );
   }
   if (row.receipt) {
+    // SAFETY: the receipt column only holds AttachOutput JSON written when this upload completed.
     const receipt = JSON.parse(String(row.receipt)) as AttachOutput;
     expandEvidence(receipt.evidence!, (p) => readSourceDescriptor(path.join(root, scope), p));
     inspectEvidence(path.join(root, scope), receipt.evidence!);
@@ -120,6 +121,7 @@ export function attachChunk(
         files.sync(path.dirname(destination));
       }
     } catch (e) {
+      // SAFETY: Node filesystem calls reject with errno exceptions.
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
         throw e;
       }
@@ -136,6 +138,7 @@ export function attachChunk(
       .prepare("SELECT data FROM attachment_chunks WHERE scope=? AND request=? ORDER BY offset")
       .iterate(scope, input.requestId)) {
       current();
+      // SAFETY: data is a BLOB column; chunks are read before completion clears it, and node:sqlite returns BLOBs as Uint8Array.
       const data = chunk.data as Uint8Array;
       digest.update(data);
       fs.writeFileSync(fd, data);
@@ -154,6 +157,7 @@ export function attachChunk(
   try {
     fs.linkSync(staging, files.guard(`${scope}/${relative}`));
   } catch (e) {
+    // SAFETY: Node filesystem calls reject with errno exceptions.
     if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
       throw e;
     }

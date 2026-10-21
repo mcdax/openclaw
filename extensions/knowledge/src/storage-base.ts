@@ -97,6 +97,7 @@ export class StorageBase {
     });
   }
   protected row(db: DatabaseSync, scope: string, request: string): Row | undefined {
+    // SAFETY: mutation rows are written only by this storage layer, with Receipt states.
     return db.prepare("SELECT * FROM mutations WHERE scope=? AND request=?").get(scope, request) as
       | Row
       | undefined;
@@ -186,11 +187,13 @@ export class StorageBase {
         .prepare("SELECT count(*) AS n FROM git_jobs WHERE scope=? AND state!='committed'")
         .get(scope)!.n,
     );
+    // SAFETY: git_jobs rows waiting for a checkpoint are only pending or unavailable.
+    const waitingState = waiting && (String(waiting.state) as "pending" | "unavailable");
     return {
       state: !this.config.writesEnabled
         ? ("read-only" as const)
-        : waiting
-          ? (String(waiting.state) as "pending" | "unavailable")
+        : waitingState
+          ? waitingState
           : last
             ? ("committed" as const)
             : ("idle" as const),
@@ -225,6 +228,7 @@ export class StorageBase {
         } catch (e) {
           result = {
             state: e instanceof GitUnavailable ? "unavailable" : "pending",
+            // SAFETY: Git checkpoint failures are Error instances.
             message: (e as Error).message.slice(0, 500),
           };
         }
@@ -333,6 +337,7 @@ export class StorageBase {
         // Content hashes per file, re-read only when its stamp changed.
         const current = new Map<string, string>();
         const originals = new Map<string, string>();
+        // SAFETY: the snapshot is the JSON [path, stamp] list this class serialized.
         for (const [relative, stamp] of JSON.parse(snapshot) as [string, string][]) {
           if (stamp === "directory") {
             continue;

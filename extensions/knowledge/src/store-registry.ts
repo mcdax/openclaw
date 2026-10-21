@@ -144,6 +144,7 @@ export class StoreRegistry {
   }
   private meta(key: string): string | null {
     return (
+      // SAFETY: meta.value is TEXT NOT NULL in the STRICT registry schema.
       (this.db.prepare("SELECT value FROM meta WHERE key=?").get(key)?.value as
         | string
         | undefined) ?? null
@@ -170,6 +171,7 @@ export class StoreRegistry {
         publicationId: String(row.publication_id),
         root: String(row.root),
         statePath: String(row.state_path),
+        // SAFETY: a CHECK constraint limits stores.state to the StoreRow states.
         state: row.state as StoreRow["state"],
         createdAt: String(row.created_at),
       }
@@ -180,10 +182,12 @@ export class StoreRegistry {
       row && {
         requestId: String(row.request_id),
         intent: String(row.intent),
+        // SAFETY: a CHECK constraint limits operations.state to the OperationRow states.
         state: row.state as OperationRow["state"],
         expectedRevision: String(row.expected_revision),
         nextSection: String(row.next_section),
         nextRevision: String(row.next_revision),
+        // SAFETY: rebind is TEXT in the STRICT registry schema, checked non-null above.
         rebind: row.rebind ? JSON.parse(row.rebind as string) : null,
         message: String(row.message),
         updatedAt: String(row.updated_at),
@@ -490,6 +494,7 @@ function writeOnce(file: string, text: string) {
       0o600,
     );
   } catch (e) {
+    // SAFETY: Node filesystem calls reject with errno exceptions.
     if ((e as NodeJS.ErrnoException).code === "EEXIST") {
       return;
     }

@@ -116,6 +116,7 @@ export class SqliteIdentityStore implements IdentityStore {
       closeSync(fd);
       created = true;
     } catch (e) {
+      // SAFETY: Node filesystem calls reject with errno exceptions.
       if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
         throw unavailable();
       }

@@ -82,6 +82,7 @@ export class StorageEdits extends StoragePublication {
           expectedOntologyFingerprint: input.expectedOntologyFingerprint,
           title: previous.title,
           body,
+          // SAFETY: a page save reads only these SavePage fields; prepare rechecks revision, ontology and bytes.
         } as SavePage & ClaimInput & RelationshipInput,
         "page",
         access,
@@ -286,6 +287,7 @@ export class StorageEdits extends StoragePublication {
       ]) {
         doc.set(
           key,
+          // SAFETY: record metadata is parsed frontmatter, a plain object keyed by field name.
           doc.createNode((metadata as Record<string, unknown>)[key], {
             aliasDuplicateObjects: false,
           }),

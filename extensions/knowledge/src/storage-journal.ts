@@ -121,6 +121,7 @@ export class StorageJournal extends StorageBase {
         );
         receipt.git = { state: "pending", message: "Published; local Git checkpoint pending." };
       } catch (e) {
+        // SAFETY: publication failures are Error instances.
         if ((e as Error).message !== "conflict") {
           throw e;
         }
@@ -142,6 +143,7 @@ export class StorageJournal extends StorageBase {
     }
     access.assertCurrent();
     return this.store.withDatabase(
+      // SAFETY: receipts are serialized Receipt values written by this storage layer.
       (db) => JSON.parse(this.row(db, scopeKey(access.scope), requestId)!.receipt) as Receipt,
     );
   }
@@ -191,10 +193,12 @@ export class StorageJournal extends StorageBase {
           .orderBy("rowid", "desc")
           .limit(limit + 1)
           .offset(offset),
+        // SAFETY: receipts are serialized Receipt values written by this storage layer.
       ).rows.map((r) => JSON.parse(r.receipt) as Receipt);
       access.assertCurrent();
       return {
         git: this.gitStatus(db, scope),
+        // SAFETY: the history query selects exactly these columns from STRICT history.
         entries: rows.slice(0, limit) as unknown as {
           sequence: number;
           id: string;
@@ -249,6 +253,7 @@ export class StorageJournal extends StorageBase {
       const plan: Plan = JSON.parse(row.plan),
         files = new PublicationFiles(this.config.root);
       return {
+        // SAFETY: receipts are serialized Receipt values written by this storage layer.
         receipt: JSON.parse(row.receipt) as Receipt,
         ...(plan.changes.filter((c) => c.path !== "vault.json").length > 3 ||
         input.includeFiles === false ||
@@ -315,6 +320,7 @@ export class StorageJournal extends StorageBase {
         : JSON.parse(row.plan).source.sha256 === input.sha256
           ? ("unchanged" as const)
           : ("changed" as const),
+      // SAFETY: receipts are serialized Receipt values written by this storage layer.
       receipt: row ? (JSON.parse(row.receipt) as Receipt) : null,
       message: row
         ? "Receipt is publication history, not proof outputs remain current. Verify its IDs; never recreate withdrawn or superseded outputs. Changed source bytes require explicit reconciliation."

@@ -205,6 +205,7 @@ export function serve(port: MessagePort, init: { config: StoreConfig; signal: Sh
         },
       };
       try {
+        // SAFETY: messages name only operations in this table, sent by StorageClient.
         const run = operations[message.op] as (s: Storage, a: Access, input: unknown) => unknown;
         port.postMessage({
           type: "done",

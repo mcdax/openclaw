@@ -33,6 +33,7 @@ export class StorageLifecycle extends StorageEdits {
         requestId: input.requestId,
         expectedVaultId: input.expectedVaultId,
         expectedOntologyFingerprint: input.expectedOntologyFingerprint,
+        // SAFETY: CorrectInput validated the replacement as a write of its declared kind.
       } as WriteInput,
       kind,
       access,
