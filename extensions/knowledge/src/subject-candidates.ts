@@ -13,34 +13,182 @@ const MAX_CANDIDATES = 12;
 
 /** Function words that are never a name, even capitalized. Compared lowercase. */
 const STOPWORDS = new Set([
-  "i", "i'm", "i've", "i'll", "you", "you're", "he", "she", "it", "it's", "we", "we're",
-  "they", "they're", "me", "him", "her", "us", "them", "my", "your", "his", "their", "our",
-  "mine", "yours", "hers", "theirs", "ours", "this", "that", "these", "those", "who", "whom",
-  "the", "a", "an", "and", "or", "but", "so", "if", "as", "at", "by", "for", "in", "of",
-  "on", "to", "up", "with", "from", "into", "over", "than", "then", "also", "just",
-  "what", "when", "where", "why", "how", "which", "whose",
-  "can", "could", "should", "would", "will", "shall", "may", "might", "must",
-  "do", "does", "did", "is", "are", "am", "was", "were", "be", "been", "being",
-  "has", "have", "had",
-  "hi", "hey", "hello", "thanks", "thank", "please", "yes", "no", "ok", "okay", "sure",
-  "maybe", "well", "oh", "let", "let's", "lets",
+  "i",
+  "i'm",
+  "i've",
+  "i'll",
+  "you",
+  "you're",
+  "he",
+  "she",
+  "it",
+  "it's",
+  "we",
+  "we're",
+  "they",
+  "they're",
+  "me",
+  "him",
+  "her",
+  "us",
+  "them",
+  "my",
+  "your",
+  "his",
+  "their",
+  "our",
+  "mine",
+  "yours",
+  "hers",
+  "theirs",
+  "ours",
+  "this",
+  "that",
+  "these",
+  "those",
+  "who",
+  "whom",
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "but",
+  "so",
+  "if",
+  "as",
+  "at",
+  "by",
+  "for",
+  "in",
+  "of",
+  "on",
+  "to",
+  "up",
+  "with",
+  "from",
+  "into",
+  "over",
+  "than",
+  "then",
+  "also",
+  "just",
+  "what",
+  "when",
+  "where",
+  "why",
+  "how",
+  "which",
+  "whose",
+  "can",
+  "could",
+  "should",
+  "would",
+  "will",
+  "shall",
+  "may",
+  "might",
+  "must",
+  "do",
+  "does",
+  "did",
+  "is",
+  "are",
+  "am",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "has",
+  "have",
+  "had",
+  "hi",
+  "hey",
+  "hello",
+  "thanks",
+  "thank",
+  "please",
+  "yes",
+  "no",
+  "ok",
+  "okay",
+  "sure",
+  "maybe",
+  "well",
+  "oh",
+  "let",
+  "let's",
+  "lets",
 ]);
 
 /** Frequent non-name words that get capitalized at a sentence start. Compared lowercase. */
 const COMMON_WORDS = new Set([
-  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-  "january", "february", "march", "april", "may", "june", "july", "august",
-  "september", "october", "november", "december",
-  "today", "tomorrow", "yesterday", "now", "soon", "later", "tonight", "morning",
-  "afternoon", "evening", "week", "month", "year", "meeting", "call", "note", "task",
-  "here", "there", "every", "some", "any", "all", "one", "two", "three", "first", "last",
-  "next", "new", "old", "good", "bad", "great", "nice", "thing", "something", "anything",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+  "today",
+  "tomorrow",
+  "yesterday",
+  "now",
+  "soon",
+  "later",
+  "tonight",
+  "morning",
+  "afternoon",
+  "evening",
+  "week",
+  "month",
+  "year",
+  "meeting",
+  "call",
+  "note",
+  "task",
+  "here",
+  "there",
+  "every",
+  "some",
+  "any",
+  "all",
+  "one",
+  "two",
+  "three",
+  "first",
+  "last",
+  "next",
+  "new",
+  "old",
+  "good",
+  "bad",
+  "great",
+  "nice",
+  "thing",
+  "something",
+  "anything",
 ]);
 
 /** True for frequent non-name words (weekdays, months, time words) that get capitalized, and their plurals ("Tuesdays"). */
 export function isCommonCapitalizedWord(token: string): boolean {
   const lc = token.toLowerCase();
-  return COMMON_WORDS.has(lc) || (lc.length > 3 && lc.endsWith("s") && COMMON_WORDS.has(lc.slice(0, -1)));
+  return (
+    COMMON_WORDS.has(lc) || (lc.length > 3 && lc.endsWith("s") && COMMON_WORDS.has(lc.slice(0, -1)))
+  );
 }
 
 const HANDLE_RE = /@([A-Za-z0-9_]{2,})/g;
@@ -55,7 +203,9 @@ const key = (s: string) => s.normalize("NFKC").trim().replace(/\s+/gu, " ").toLo
 // True when the match at idx opens the text or follows sentence punctuation.
 function atSentenceStart(text: string, idx: number): boolean {
   let i = idx - 1;
-  while (i >= 0 && /\s/u.test(text[i]!)) i--;
+  while (i >= 0 && /\s/u.test(text[i]!)) {
+    i--;
+  }
   return i < 0 || /[.!?:;\n\r•\-(["“]/u.test(text[i]!);
 }
 
@@ -69,30 +219,55 @@ function atSentenceStart(text: string, idx: number): boolean {
 export function nameCandidates(text: string): NameCandidate[] {
   const seen = new Map<string, { query: string; multiToken: boolean; midSentence: boolean }>();
   const consider = (raw: string, midSentence: boolean) => {
-    const query = stripPossessive(raw.trim()), norm = key(query);
-    if (!norm) return;
+    const query = stripPossessive(raw.trim()),
+      norm = key(query);
+    if (!norm) {
+      return;
+    }
     const existing = seen.get(norm);
-    if (existing) { existing.midSentence ||= midSentence; return; }
+    if (existing) {
+      existing.midSentence ||= midSentence;
+      return;
+    }
     seen.set(norm, { query, multiToken: /\s/u.test(query), midSentence });
   };
   // Handles are deliberate references, so they never count as sentence openers.
-  for (const m of text.matchAll(HANDLE_RE)) consider(m[1]!, true);
+  for (const m of text.matchAll(HANDLE_RE)) {
+    consider(m[1]!, true);
+  }
   for (const m of text.matchAll(CAP_RUN_RE)) {
     const surface = m[0];
     consider(surface, !atSentenceStart(text, m.index ?? 0));
     // "Did Atlas" glues an auxiliary onto the name; also consider the name alone.
     const tokens = surface.split(/\s+/u);
     let first = 0;
-    while (first < tokens.length && STOPWORDS.has(stripPossessive(tokens[first]!).toLowerCase())) first++;
-    if (first > 0 && first < tokens.length) consider(tokens.slice(first).join(" "), true);
+    while (first < tokens.length && STOPWORDS.has(stripPossessive(tokens[first]!).toLowerCase())) {
+      first++;
+    }
+    if (first > 0 && first < tokens.length) {
+      consider(tokens.slice(first).join(" "), true);
+    }
   }
   const out: NameCandidate[] = [];
   for (const c of seen.values()) {
     const lc = c.query.toLowerCase();
     // Multi-token runs are high-signal; single tokens get the strict filters.
-    if (!c.multiToken && (c.query.length < 2 || /^[0-9][0-9.,]*$/u.test(c.query) || STOPWORDS.has(lc) || (isCommonCapitalizedWord(lc) && !c.midSentence))) continue;
-    out.push({ query: c.query, ...(!c.multiToken && !c.midSentence ? { sentenceStart: true as const } : {}) });
-    if (out.length >= MAX_CANDIDATES) break;
+    if (
+      !c.multiToken &&
+      (c.query.length < 2 ||
+        /^[0-9][0-9.,]*$/u.test(c.query) ||
+        STOPWORDS.has(lc) ||
+        (isCommonCapitalizedWord(lc) && !c.midSentence))
+    ) {
+      continue;
+    }
+    out.push({
+      query: c.query,
+      ...(!c.multiToken && !c.midSentence ? { sentenceStart: true as const } : {}),
+    });
+    if (out.length >= MAX_CANDIDATES) {
+      break;
+    }
   }
   return out;
 }

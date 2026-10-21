@@ -223,7 +223,6 @@ full ingestion completion merely because individual assertions published. The ag
 reconciles the workflow using this work log and the existing per-write guarantees;
 there is no ingestion-system prerequisite.
 
-
 ## Choose assertions and reconcile reruns
 
 ### Structured context and continuity
@@ -266,14 +265,14 @@ The UI can fold this representation into a meeting entry without deleting it.
 Use structured records for independently useful, sourced assertions, not every
 sentence of a summary. Keep the page as readable synthesis with inline citations.
 
-| Source meaning | Claim representation |
-|---|---|
-| Material factual statement | `claim_kind: fact`, `assertion_origin: source`, attribution names the actual source |
-| Explicit decision | `decision`; preserve conditions, decision maker and source date in body/attribution |
-| Explicit commitment | `commitment`; resolved `owner` when known, `due_at` only when supported |
-| Dated event / timeline material | `event`; `occurred_at` at source precision, all relevant resolved page IDs in `entities` |
-| Stated belief/preference | `belief`/`preference`; source origin for a document's speaker, `user_belief` for the user's own assertion |
-| Agent analysis worth saving | appropriate kind with `agent_inference`; evidence supports the premises, not an invented quotation |
+| Source meaning                  | Claim representation                                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Material factual statement      | `claim_kind: fact`, `assertion_origin: source`, attribution names the actual source                       |
+| Explicit decision               | `decision`; preserve conditions, decision maker and source date in body/attribution                       |
+| Explicit commitment             | `commitment`; resolved `owner` when known, `due_at` only when supported                                   |
+| Dated event / timeline material | `event`; `occurred_at` at source precision, all relevant resolved page IDs in `entities`                  |
+| Stated belief/preference        | `belief`/`preference`; source origin for a document's speaker, `user_belief` for the user's own assertion |
+| Agent analysis worth saving     | appropriate kind with `agent_inference`; evidence supports the premises, not an invented quotation        |
 
 One independently correctable assertion per claim. Holder/speaker belongs in
 attribution; `entities` describes resolved relevant pages, not automatic endorsement.
@@ -324,7 +323,14 @@ Structured create example (replace placeholders with observed/generated values):
   "assertion_origin": "source",
   "attribution": "Speaker 2, retained transcript line 5",
   "dependencies": ["<meeting page ID>"],
-  "evidence": [{"path": "<returned artifact path>", "sha256": "<returned hash>", "start_line": 5, "end_line": 5}]
+  "evidence": [
+    {
+      "path": "<returned artifact path>",
+      "sha256": "<returned hash>",
+      "start_line": 5,
+      "end_line": 5
+    }
+  ]
 }
 ```
 

@@ -16,6 +16,7 @@ fields:
   role: Volunteer coordinator
 custom_note: Unknown user metadata is preserved.
 ---
+
 # Alex Rivera
 
 Fictional coordinator for the [Community Garden](../projects/community-garden.md).

@@ -6,7 +6,9 @@ import { createKnowledgeService } from "./service.js";
 import { PluginConfig, STORES_CONFIG_PATH } from "./stores-config.js";
 
 const feature = defineFeaturePlugin({
-  contract, name: "Knowledge", description: "Evidence-backed knowledge, inspectable in OpenClaw.",
+  contract,
+  name: "Knowledge",
+  description: "Evidence-backed knowledge, inspectable in OpenClaw.",
   setup: createKnowledgeService,
 });
 // This host's feature helper has no config option. Compose its shared adapters
@@ -16,8 +18,13 @@ const configSchema = PluginConfig;
 // new model runs Gateway-wide while it drains. Knowledge applies membership
 // in-process; the host still publishes the new runtime config for no-op plans.
 const reload = { noopPrefixes: [STORES_CONFIG_PATH.join(".")] };
-const entry = definePluginEntry({ ...feature, reload, configSchema: buildJsonPluginConfigSchema({ ...configSchema }) });
+const entry = definePluginEntry({
+  ...feature,
+  reload,
+  configSchema: buildJsonPluginConfigSchema({ ...configSchema }),
+});
 Object.defineProperty(entry, toolPluginMetadataSymbol, {
-  value: { ...getToolPluginMetadata(feature), configSchema }, enumerable: false,
+  value: { ...getToolPluginMetadata(feature), configSchema },
+  enumerable: false,
 });
 export default entry;

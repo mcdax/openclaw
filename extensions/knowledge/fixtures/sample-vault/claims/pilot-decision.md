@@ -24,4 +24,5 @@ evidence:
     end_line: 4
     quote: We decided to begin with a small pilot garden.
 ---
+
 The group decided to begin with a small pilot garden.

@@ -5,10 +5,12 @@ import type { Summary } from "./inspection-contract.js";
 // Counting rows alone is insufficient: cards contain nested evidence/identity data.
 export function withinBudget(value: unknown): boolean {
   const json = JSON.stringify(value);
-  if (Buffer.byteLength(json, "utf8") > 240 * 1024) return false;
+  if (Buffer.byteLength(json, "utf8") > 240 * 1024) {
+    return false;
+  }
   let nodes = 0;
-  const visit = (v: unknown): boolean => ++nodes <= 3800 &&
-    (v === null || typeof v !== "object" || Object.values(v).every(visit));
+  const visit = (v: unknown): boolean =>
+    ++nodes <= 3800 && (v === null || typeof v !== "object" || Object.values(v).every(visit));
   return visit(JSON.parse(json));
 }
 
@@ -20,4 +22,3 @@ export function compactSummary<T extends Static<typeof Summary>>(record: T): T {
   }
   return result;
 }
-

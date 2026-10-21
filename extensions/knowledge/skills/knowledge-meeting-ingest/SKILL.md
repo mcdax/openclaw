@@ -35,20 +35,20 @@ Reduce the input to this shape in task working context; it is not a new API:
 source: "<recorder name, or 'manual'>"
 source_id: "<recording ID, if supplied>"
 title: "Meeting Title"
-date: YYYY-MM-DD               # null if unknown
-time: "HH:MM TZ"               # null if unknown
-duration: "45m"                # null if unknown
-attendees:                     # source claims, not verified identities
+date: YYYY-MM-DD # null if unknown
+time: "HH:MM TZ" # null if unknown
+duration: "45m" # null if unknown
+attendees: # source claims, not verified identities
   - name: "..."
-    email: "..."               # only if source provides it
-    role: "..."                # only if known
+    email: "..." # only if source provides it
+    role: "..." # only if known
 transcript_segments:
-  - speaker: "..."             # resolved name OR explicitly unresolved
-    speaker_raw: "..."         # retain original label for traceability
+  - speaker: "..." # resolved name OR explicitly unresolved
+    speaker_raw: "..." # retain original label for traceability
     text: "..."
-raw_transcript_text: "..."     # complete available transcript, never truncate
-source_summary: "..."          # recorder summary is a CLAIM, not a FACT
-source_url: "..."              # if supplied
+raw_transcript_text: "..." # complete available transcript, never truncate
+source_summary: "..." # recorder summary is a CLAIM, not a FACT
+source_url: "..." # if supplied
 ```
 
 Retain source segment order/timestamps when present. A summary is two lossy
@@ -135,24 +135,30 @@ Use the current ontology's meeting definition and actual resolved page links:
 **Duration:** {if available}
 
 ## Summary
+
 {3–5 key outcomes, each citing the lines that support it}
 
 ## Key Decisions
+
 {Decisions with context and citations.
 If none: _No decisions — discussion only._}
 
 ## Action Items
+
 {Supported commitments, owners/deadlines when known, citations.
 If none: _None — exploratory conversation._}
 
 ## Notable Quotes
+
 {Verbatim transcript spans, attributed, in blockquotes with citations.
 If none: _No notable quotes — operational/logistics meeting._}
 
 ## Discussion Notes
+
 {Structured notes by topic, with citations}
 
 ## Source Context
+
 {Only relevant provenance: source ID/URL, raw speaker label → supported identity
 or unresolved with basis, coverage/split boundaries or transcription limitations.
 Use readable inline citations, not artifact paths or hashes.}
@@ -178,12 +184,12 @@ not only reruns of this source. Use shared publication guidance to distinguish
 reuse, additional support, dated reaffirmation, updated plan, contradiction and
 explicit correction. Similar titles alone never authorize supersession.
 
-| Claim type | Verification bar |
-|---|---|
-| Role/relationship change | Explicit transcript passage, not enthusiasm or implication |
-| Ownership/attribution | Explicit ownership language or corroborating evidence; saying a name is not owning it |
-| New proper noun | Search Knowledge for canonical spelling, then public sources if appropriate; otherwise label unverified spelling |
-| Major life/deal event | Verbatim support; inspect existing evidence and chronology |
+| Claim type               | Verification bar                                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Role/relationship change | Explicit transcript passage, not enthusiasm or implication                                                       |
+| Ownership/attribution    | Explicit ownership language or corroborating evidence; saying a name is not owning it                            |
+| New proper noun          | Search Knowledge for canonical spelling, then public sources if appropriate; otherwise label unverified spelling |
+| Major life/deal event    | Verbatim support; inspect existing evidence and chronology                                                       |
 
 Also check existing Knowledge for contradictions and logical plausibility.
 Surprising claims deserve extra scrutiny, not a story that rationalizes them.

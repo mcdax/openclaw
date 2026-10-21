@@ -17,6 +17,7 @@ fields:
 dependencies:
   - sample_claim_pilot
 ---
+
 # Community Garden
 
 A fictional project encompassing a small garden pilot workstream.

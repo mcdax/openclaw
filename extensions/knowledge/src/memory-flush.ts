@@ -1,7 +1,9 @@
 import type { MemoryPluginCapability } from "openclaw/plugin-sdk/memory-host-core";
 import { SILENT_REPLY_TOKEN } from "openclaw/plugin-sdk/reply-runtime";
 
-type MemoryProviderFlushPlanResolver = NonNullable<MemoryPluginCapability["providerFlushPlanResolver"]>;
+type MemoryProviderFlushPlanResolver = NonNullable<
+  MemoryPluginCapability["providerFlushPlanResolver"]
+>;
 type MemoryFlushPlan = NonNullable<ReturnType<MemoryProviderFlushPlanResolver>>;
 
 const KNOWLEDGE_FLUSH_PROMPT = [
@@ -26,6 +28,11 @@ export function buildKnowledgeMemoryFlushPlan(): MemoryFlushPlan {
     prompt: KNOWLEDGE_FLUSH_PROMPT,
     systemPrompt: KNOWLEDGE_FLUSH_SYSTEM_PROMPT,
     persistenceToolNames: ["knowledge_remember", "knowledge_save_page"],
-    lookupToolNames: ["knowledge_grep", "knowledge_lookup", "knowledge_record", "knowledge_ontology"],
+    lookupToolNames: [
+      "knowledge_grep",
+      "knowledge_lookup",
+      "knowledge_record",
+      "knowledge_ontology",
+    ],
   };
 }

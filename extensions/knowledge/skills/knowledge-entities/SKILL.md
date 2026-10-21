@@ -67,11 +67,11 @@ an already resolved handle.
 
 ## Enrichment tiers
 
-| Tier | Who | Effort |
-|---|---|---|
-| Key | Close collaborators, key contacts | Full relevant source context; task-scoped external research when needed |
+| Tier    | Who                                                 | Effort                                                                        |
+| ------- | --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Key     | Close collaborators, key contacts                   | Full relevant source context; task-scoped external research when needed       |
 | Notable | Occasional interactions, relevant industry entities | Source extraction plus Knowledge cross-reference; targeted research if needed |
-| Minor | Worth tracking, limited relevance | Source and Knowledge cross-reference; no broad enrichment sweep |
+| Minor   | Worth tracking, limited relevance                   | Source and Knowledge cross-reference; no broad enrichment sweep               |
 
 Actual, sufficiently identified meeting attendees get pages even with limited
 context: their sourced participation and contribution are meaningful content.

@@ -9,24 +9,24 @@ capabilities, and limitations. Building does not switch the live memory slot.
 
 **Current milestone:** agent-driven knowledge changes with exact-target correction/withdrawal and a read-only, entity-centered Control UI. Tools publish journaled pages, sourced claims/relationships and entity metadata; the UI inspects them and hands change requests to chat. Writes require `vault.writesEnabled: true`; sample mode remains read-only. Owner-direct turns can access the configured agent’s private records; shared turns are restricted to their own conversation partition.
 
-| Capability | Status |
-|---|---|
-| Scoped record listing, evidence inspection and ontology validation | Implemented |
-| Model-facing inspection | Concise defaults, targeted views, opt-in metadata/raw sources and pagination; see [API guide](docs/MODEL_API.md) |
-| Create/edit pages and retain supplied text evidence | Implemented, configuration/authority gated; saved pages are immediately available, with no approval step |
-| Revision/hash preconditions, identical retries, receipts/history | Implemented |
-| Local Git history | Automatic in writable vaults when Git is installed; one commit per publication or observed external-change batch; visible retryable gaps |
-| Accepted-write interruption recovery and conflict retention | Implemented and exercised in isolated fault-injection/process tests; not a complete backup/restore protocol |
-| Read-only Control UI | Recent/Browse, entity-linked claims and evidence, typed connections, file/history inspection, and copy-request/open-chat handoff; no direct Knowledge write controls |
-| Keyword retrieval and exact identity | Scoped SQLite FTS5, filters, bounded citations and native Search; [retrieval guide](docs/RETRIEVAL.md) |
-| Embeddings | Not implemented or required |
-| Document/meeting ingestion | Gbrain-aligned agent workflows over page, evidence, claim and relationship tools; [workflow guide](docs/WORKFLOWS.md) |
-| Structured claims, relationships and entity metadata | Implemented through agent tools, with evidence, temporal validation and retry recovery; inspected in native UI |
-| Correction/withdrawal | Agent-only exact-target operations, recoverable two-record correction, durable lifecycle safeguards and dependency impact; [contract](docs/CORRECTIONS.md) |
-| Ingestion continuation | Agent work log plus existing records and receipts; enumerable sources can retain discoverable coverage snapshots and manifests without a separate ingestion service |
-| Live refresh | Private-vault filesystem invalidations, authorized snapshot refresh, reconnect and 30-second visible-page fallback; retired services are fenced |
-| Scheduled maintenance | Zero-LLM claim relink, on demand (`knowledge_relink`) and as a daily pass over every store, on by default; [maintenance guide](docs/MAINTENANCE.md) |
-| Full backup/restore | Not implemented |
+| Capability                                                         | Status                                                                                                                                                               |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scoped record listing, evidence inspection and ontology validation | Implemented                                                                                                                                                          |
+| Model-facing inspection                                            | Concise defaults, targeted views, opt-in metadata/raw sources and pagination; see [API guide](docs/MODEL_API.md)                                                     |
+| Create/edit pages and retain supplied text evidence                | Implemented, configuration/authority gated; saved pages are immediately available, with no approval step                                                             |
+| Revision/hash preconditions, identical retries, receipts/history   | Implemented                                                                                                                                                          |
+| Local Git history                                                  | Automatic in writable vaults when Git is installed; one commit per publication or observed external-change batch; visible retryable gaps                             |
+| Accepted-write interruption recovery and conflict retention        | Implemented and exercised in isolated fault-injection/process tests; not a complete backup/restore protocol                                                          |
+| Read-only Control UI                                               | Recent/Browse, entity-linked claims and evidence, typed connections, file/history inspection, and copy-request/open-chat handoff; no direct Knowledge write controls |
+| Keyword retrieval and exact identity                               | Scoped SQLite FTS5, filters, bounded citations and native Search; [retrieval guide](docs/RETRIEVAL.md)                                                               |
+| Embeddings                                                         | Not implemented or required                                                                                                                                          |
+| Document/meeting ingestion                                         | Gbrain-aligned agent workflows over page, evidence, claim and relationship tools; [workflow guide](docs/WORKFLOWS.md)                                                |
+| Structured claims, relationships and entity metadata               | Implemented through agent tools, with evidence, temporal validation and retry recovery; inspected in native UI                                                       |
+| Correction/withdrawal                                              | Agent-only exact-target operations, recoverable two-record correction, durable lifecycle safeguards and dependency impact; [contract](docs/CORRECTIONS.md)           |
+| Ingestion continuation                                             | Agent work log plus existing records and receipts; enumerable sources can retain discoverable coverage snapshots and manifests without a separate ingestion service  |
+| Live refresh                                                       | Private-vault filesystem invalidations, authorized snapshot refresh, reconnect and 30-second visible-page fallback; retired services are fenced                      |
+| Scheduled maintenance                                              | Zero-LLM claim relink, on demand (`knowledge_relink`) and as a daily pass over every store, on by default; [maintenance guide](docs/MAINTENANCE.md)                  |
+| Full backup/restore                                                | Not implemented                                                                                                                                                      |
 
 See [setup and authority](docs/REAL_VAULT.md), [model-facing API](docs/MODEL_API.md), [ontology](docs/ONTOLOGY.md), and [record format](docs/FORMAT.md). Verification reports distinguish local checks from live activation; a build alone does not update the running backend.
 
