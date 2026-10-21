@@ -7,7 +7,8 @@ Ontology taxonomy and composition semantics adapted from gbrain
 Bundled workflow skills and shared conventions are also adapted from that commit:
 `skills/{query,capture,ingest,meeting-ingestion,resolve-before-asking,enrich,brain-link-discipline}/SKILL.md`,
 `skills/_brain-filing-rules.md`, and `skills/conventions/{quality,untrusted-content}.md`.
-See `docs/WORKFLOWS.md` for the operation map and deliberate departures.
+See https://docs.openclaw.ai/plugins/knowledge/ingestion for the workflows and
+their rules.
 
 `knowledge_remember` subject inference (`src/subject-infer.ts`,
 `src/subject-candidates.ts`) is adapted from gbrain commit
@@ -17,7 +18,7 @@ pass of `src/core/context/entity-salience.ts`.
 
 Claim relink (`src/relink.ts`) adapts the `page` and `mention` tiers of gbrain
 commit e45f13f052c06e6f92b4e31204e34edc0634b9da: `src/core/facts/relink.ts`.
-See `docs/MAINTENANCE.md` for departures.
+See https://docs.openclaw.ai/plugins/knowledge/maintenance for departures.
 
 MIT License
 
