@@ -1,3 +1,8 @@
+import { jsonPathValue } from "openclaw/plugin-sdk/database-engine-worker-runtime";
+import {
+  executeSqliteQuerySync,
+  getNodeSqliteKysely,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Check } from "typebox/value";
 import type { VaultAccess } from "./access.js";
 import { SourceCheckInput, type SourceIdentity } from "./ingestion-contract.js";
@@ -6,6 +11,7 @@ import { publicationRole, PublicationFiles } from "./publication-files.js";
 import { observeWithdrawals } from "./retrieval.js";
 import { appendActivity } from "./session-activity.js";
 import { StorageBase } from "./storage-base.js";
+import type { StorageTables } from "./storage-tables.js";
 import { canonical, scopeKey, type Plan } from "./storage-types.js";
 import { checkpointKey } from "./store-manifest.js";
 import { textWindow } from "./text-window.js";
@@ -166,12 +172,26 @@ export class StorageJournal extends StorageBase {
           "SELECT sequence,id,provenance,at,path,revision,hash FROM history WHERE scope=? AND (? IS NULL OR id=?) ORDER BY sequence DESC LIMIT ? OFFSET ?",
         )
         .all(scope, input.id ?? null, input.id ?? null, limit + 1, offset);
-      const mutations = db
-        .prepare(
-          "SELECT receipt FROM mutations WHERE scope=? AND (? IS NULL OR json_extract(receipt,'$.id')=? OR json_extract(receipt,'$.targetId')=?) ORDER BY rowid DESC LIMIT ? OFFSET ?",
-        )
-        .all(scope, input.id ?? null, input.id ?? null, input.id ?? null, limit + 1, offset)
-        .map((r) => JSON.parse(String(r.receipt)) as Receipt);
+      const id = input.id;
+      let query = getNodeSqliteKysely<StorageTables>(db)
+        .selectFrom("mutations")
+        .select("receipt")
+        .where("scope", "=", scope);
+      if (id !== undefined) {
+        query = query.where((eb) =>
+          eb.or([
+            eb(jsonPathValue(db, eb.ref("receipt"), eb.val("$.id")), "=", id),
+            eb(jsonPathValue(db, eb.ref("receipt"), eb.val("$.targetId")), "=", id),
+          ]),
+        );
+      }
+      const mutations = executeSqliteQuerySync(
+        db,
+        query
+          .orderBy("rowid", "desc")
+          .limit(limit + 1)
+          .offset(offset),
+      ).rows.map((r) => JSON.parse(r.receipt) as Receipt);
       access.assertCurrent();
       return {
         git: this.gitStatus(db, scope),

@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
+import { jsonPathValue } from "openclaw/plugin-sdk/database-engine-worker-runtime";
+import {
+  executeSqliteQuerySync,
+  executeSqliteQueryTakeFirstSync,
+  getNodeSqliteKysely,
+  runSqliteImmediateTransactionSync,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Check } from "typebox/value";
 import type { VaultAccess } from "./access.js";
 import { annotationEvidence } from "./annotations.js";
@@ -15,6 +22,7 @@ import { PublicationFiles } from "./publication-files.js";
 import { RealVault, type StoreConfig } from "./real-vault.js";
 import { observeWithdrawals } from "./retrieval.js";
 import { readSourceDescriptor, recordSourceDependencies } from "./source-records.js";
+import type { StorageTables } from "./storage-tables.js";
 import { canonical, scopeKey, blocked, type Row, type PublicationHook } from "./storage-types.js";
 import { Manifest, checkpointKey } from "./store-manifest.js";
 import type { SampleVault } from "./vault.js";
@@ -58,17 +66,7 @@ export class StorageBase {
     }
   }
   protected transaction<T>(run: (db: DatabaseSync) => T): T {
-    return this.store.withDatabase((db) => {
-      db.exec("BEGIN IMMEDIATE");
-      try {
-        const result = run(db);
-        db.exec("COMMIT");
-        return result;
-      } catch (e) {
-        db.exec("ROLLBACK");
-        throw e;
-      }
-    });
+    return this.store.withDatabase((db) => runSqliteImmediateTransactionSync(db, () => run(db)));
   }
   protected identity(
     db: DatabaseSync,
@@ -111,11 +109,23 @@ export class StorageBase {
     }
   }
   protected sourceRow(db: DatabaseSync, scope: string, source: SourceIdentity): Row | undefined {
-    return db
-      .prepare(
-        "SELECT * FROM mutations WHERE scope=? AND json_extract(plan,'$.source.provider')=? AND json_extract(plan,'$.source.key')=? ORDER BY rowid DESC LIMIT 1",
-      )
-      .get(scope, source.provider, source.key) as Row | undefined;
+    const row = executeSqliteQueryTakeFirstSync(
+      db,
+      getNodeSqliteKysely<StorageTables>(db)
+        .selectFrom("mutations")
+        .select(["scope", "request", "intent", "state", "plan", "receipt"])
+        .where("scope", "=", scope)
+        .where(
+          (eb) => jsonPathValue(db, eb.ref("plan"), eb.val("$.source.provider")),
+          "=",
+          source.provider,
+        )
+        .where((eb) => jsonPathValue(db, eb.ref("plan"), eb.val("$.source.key")), "=", source.key)
+        .orderBy("rowid", "desc")
+        .limit(1),
+    );
+    // SAFETY: mutation rows are written only with Receipt states by this storage layer.
+    return row as Row | undefined;
   }
   protected publicationToken(scope: string, request: string) {
     return digest(`${this.config.vaultId}:${scope}:${request}`);
@@ -131,17 +141,31 @@ export class StorageBase {
       return;
     }
     const batch: GitBatch = { token, changes, actor, at: new Date().toISOString() };
-    db.prepare(
-      "INSERT OR IGNORE INTO git_jobs(scope,token,batch,state,message) VALUES (?,?,?,'pending','Local Git checkpoint pending.')",
-    ).run(scope, token, JSON.stringify(batch));
+    const kysely = getNodeSqliteKysely<StorageTables>(db);
+    executeSqliteQuerySync(
+      db,
+      kysely
+        .insertInto("git_jobs")
+        .values({
+          scope,
+          token,
+          batch: JSON.stringify(batch),
+          state: "pending",
+          message: "Local Git checkpoint pending.",
+        })
+        .onConflict((oc) => oc.doNothing()),
+    );
     for (const c of changes) {
       if (c.raw === null && !c.fileHash) {
         db.prepare("DELETE FROM git_files WHERE scope=? AND path=?").run(scope, c.path);
       } else {
-        db.prepare("INSERT OR REPLACE INTO git_files VALUES (?,?,?)").run(
-          scope,
-          c.path,
-          c.fileHash ?? digest(c.raw!),
+        const hash = c.fileHash ?? digest(c.raw!);
+        executeSqliteQuerySync(
+          db,
+          kysely
+            .insertInto("git_files")
+            .values({ scope, path: c.path, hash })
+            .onConflict((oc) => oc.columns(["scope", "path"]).doUpdateSet({ hash })),
         );
       }
     }
@@ -258,13 +282,13 @@ export class StorageBase {
       r.raw,
       agentId ?? null,
     );
-    db.prepare("INSERT OR REPLACE INTO observations VALUES (?,?,?,?,?,?)").run(
-      scope,
-      r.id,
-      r.path,
-      r.hash,
-      r.revision,
-      r.raw,
+    const observed = { path: r.path, hash: r.hash, revision: r.revision, raw: r.raw };
+    executeSqliteQuerySync(
+      db,
+      getNodeSqliteKysely<StorageTables>(db)
+        .insertInto("observations")
+        .values({ scope, id: r.id, ...observed })
+        .onConflict((oc) => oc.columns(["scope", "id"]).doUpdateSet(observed)),
     );
   }
   /** Content hashes of the source descriptors one record cites. Reuses the last

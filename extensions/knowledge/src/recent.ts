@@ -1,4 +1,9 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, SQLOutputValue } from "node:sqlite";
+import {
+  executeSqliteQuerySync,
+  getNodeSqliteKysely,
+  runSqliteImmediateTransactionSync,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Type, type Static } from "typebox";
 import { claimCard } from "./claim-card.js";
 import { Summary, CardSummary } from "./inspection-contract.js";
@@ -6,6 +11,7 @@ import type { LoadedRecord } from "./model.js";
 import { text } from "./model.js";
 import { recordSummary } from "./record-summary.js";
 import { withinBudget, compactSummary } from "./response-budget.js";
+import type { StorageTables } from "./storage-tables.js";
 
 const sequence = Type.Integer({ minimum: 0 });
 export const RecentInput = Type.Object(
@@ -71,6 +77,69 @@ export const RecentOutput = Type.Object(
 );
 type Item = Static<typeof RecentOutput>["items"][number];
 
+/** SQL value json_extract yields for a JSON value: containers stay JSON text. */
+function extracted(value: unknown): string | number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "boolean") {
+    return value ? 1 : 0;
+  }
+  return typeof value === "string" || typeof value === "number" ? value : JSON.stringify(value);
+}
+// One object member, or undefined when the value is not an object.
+const jsonMember = (value: unknown, key: string): unknown =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)[key] // SAFETY: a non-array object is checked above.
+    : undefined;
+const firstPresent = (...values: unknown[]) =>
+  values.map(extracted).find((value) => value !== null) ?? null;
+// json_extract yields INTEGER for whole JSON numbers; node:sqlite binds every number as REAL.
+const integerClass = (value: string | number | null) =>
+  typeof value === "number" && Number.isSafeInteger(value) ? BigInt(value) : value;
+// TEXT-affinity columns store extracted numbers as their text.
+const firstText = (...values: unknown[]) => {
+  const value = firstPresent(...values);
+  return value === null ? null : String(value);
+};
+
+/** Recent projection rows for one published mutation: one per published record. */
+function projectRequest(scope: string, request: string, plan: unknown, receipt: unknown) {
+  const listed = jsonMember(plan, "records") ?? [jsonMember(plan, "record") ?? null];
+  const records = (Array.isArray(listed) ? listed : [listed]).map((r: unknown, ordinal) => {
+    const metadata = jsonMember(r, "metadata");
+    return {
+      scope,
+      request,
+      ordinal,
+      id: firstText(jsonMember(r, "id")),
+      hash: firstText(jsonMember(r, "hash")),
+      revision: integerClass(firstPresent(jsonMember(r, "revision"))),
+      actor: firstText(jsonMember(plan, "actor")),
+      kind: firstText(jsonMember(r, "kind")),
+      type: firstText(
+        jsonMember(metadata, "claim_kind"),
+        jsonMember(metadata, "type"),
+        jsonMember(r, "kind"),
+      ),
+      title: firstText(jsonMember(r, "title")),
+    };
+  });
+  const receiptText = (key: string) => firstText(jsonMember(receipt, key));
+  return {
+    records,
+    request: {
+      scope,
+      request,
+      operation: receiptText("operation"),
+      target_id: receiptText("targetId"),
+      at: receiptText("at"),
+      reason: receiptText("reason"),
+      replacement_id: receiptText("replacementId"),
+    },
+  };
+}
+
 /** Bring the recent_* projection in line with this scope's published mutations.
  * Plans are parsed once per request, not on every read; the key comparisons
  * stop before the plan column. A projection written before an older plugin
@@ -81,17 +150,14 @@ function syncRecentProjection(db: DatabaseSync, scope: string) {
   db.exec(`CREATE TABLE IF NOT EXISTS recent_requests_v1 (
       scope TEXT NOT NULL, request TEXT NOT NULL, operation TEXT, target_id TEXT, at TEXT, reason TEXT, replacement_id TEXT,
       PRIMARY KEY(scope,request)
-    ) WITHOUT ROWID;
+    );
     CREATE TABLE IF NOT EXISTS recent_records_v1 (
       scope TEXT NOT NULL, request TEXT NOT NULL, ordinal INTEGER NOT NULL, id TEXT, hash TEXT, revision, actor TEXT, kind TEXT, type TEXT, title TEXT,
       PRIMARY KEY(scope,request,ordinal)
-    ) WITHOUT ROWID;`);
+    );`);
   const published = "SELECT request FROM mutations WHERE scope=? AND state='published'";
-  const missing = db
-    .prepare(
-      `SELECT 1 FROM mutations m WHERE m.scope=? AND m.state='published' AND NOT EXISTS (SELECT 1 FROM recent_requests_v1 r WHERE r.scope=m.scope AND r.request=m.request) LIMIT 1`,
-    )
-    .get(scope);
+  const fresh = `FROM mutations m WHERE m.scope=? AND m.state='published' AND NOT EXISTS (SELECT 1 FROM recent_requests_v1 r WHERE r.scope=m.scope AND r.request=m.request)`;
+  const missing = db.prepare(`SELECT 1 ${fresh} LIMIT 1`).get(scope);
   const stale = db
     .prepare(
       `SELECT 1 FROM recent_requests_v1 r WHERE r.scope=? AND r.request NOT IN (${published}) LIMIT 1`,
@@ -100,8 +166,7 @@ function syncRecentProjection(db: DatabaseSync, scope: string) {
   if (!missing && !stale) {
     return;
   }
-  db.exec("BEGIN IMMEDIATE");
-  try {
+  runSqliteImmediateTransactionSync(db, () => {
     if (stale) {
       for (const table of ["recent_requests_v1", "recent_records_v1"]) {
         db.prepare(`DELETE FROM ${table} WHERE scope=? AND request NOT IN (${published})`).run(
@@ -110,21 +175,73 @@ function syncRecentProjection(db: DatabaseSync, scope: string) {
         );
       }
     }
-    const fresh = `FROM mutations m WHERE m.scope=? AND m.state='published' AND NOT EXISTS (SELECT 1 FROM recent_requests_v1 r WHERE r.scope=m.scope AND r.request=m.request)`;
-    db.prepare(`INSERT INTO recent_records_v1(scope,request,ordinal,id,hash,revision,actor,kind,type,title)
-      SELECT m.scope, m.request, j.key, json_extract(j.value,'$.id'), json_extract(j.value,'$.hash'), json_extract(j.value,'$.revision'), json_extract(m.plan,'$.actor'),
-        json_extract(j.value,'$.kind'), COALESCE(json_extract(j.value,'$.metadata.claim_kind'),json_extract(j.value,'$.metadata.type'),json_extract(j.value,'$.kind')), json_extract(j.value,'$.title')
-      ${fresh.replace("FROM mutations m", "FROM mutations m, json_each(COALESCE(json_extract(m.plan,'$.records'), json_array(json_extract(m.plan,'$.record')))) j")}`).run(
-      scope,
-    );
-    db.prepare(`INSERT INTO recent_requests_v1(scope,request,operation,target_id,at,reason,replacement_id)
-      SELECT m.scope, m.request, json_extract(m.receipt,'$.operation'), json_extract(m.receipt,'$.targetId'), json_extract(m.receipt,'$.at'), json_extract(m.receipt,'$.reason'), json_extract(m.receipt,'$.replacementId')
-      ${fresh}`).run(scope);
-    db.exec("COMMIT");
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
+    const kysely = getNodeSqliteKysely<StorageTables>(db);
+    for (const row of db.prepare(`SELECT m.request, m.plan, m.receipt ${fresh}`).all(scope)) {
+      const projected = projectRequest(
+        scope,
+        String(row.request),
+        JSON.parse(String(row.plan)),
+        JSON.parse(String(row.receipt)),
+      );
+      for (const record of projected.records) {
+        executeSqliteQuerySync(db, kysely.insertInto("recent_records_v1").values(record));
+      }
+      executeSqliteQuerySync(db, kysely.insertInto("recent_requests_v1").values(projected.request));
+    }
+  });
+}
+
+/** One logical recent event: a published correction/withdrawal or a history snapshot. */
+type RecentEvent = {
+  sequence: number;
+  id: string;
+  at: string;
+  change: string;
+  kind: string | null;
+  type: string | null;
+  reason: string | null;
+  replacementId: string | null;
+  title: string | null;
+};
+const isLifecycleEvent = (change: string) => change === "corrected" || change === "withdrawn";
+const nullableText = (value: SQLOutputValue) => (value === null ? null : String(value));
+
+/** Group visible events by source, newest first, as the Recent "by source" view pages them. */
+function groupBySource(
+  events: RecentEvent[],
+  sourceIds: Record<string, string>,
+  sourceId: string | undefined,
+  before: number,
+  limit: number,
+) {
+  // Only the newest event per record (or per lifecycle event) represents it.
+  const seen = new Set<string>();
+  const groups = new Map<string, RecentEvent[]>();
+  for (const event of events) {
+    const partition = isLifecycleEvent(event.change)
+      ? `event:${event.sequence}`
+      : `record:${event.id}`;
+    if (seen.has(partition)) {
+      continue;
+    }
+    seen.add(partition);
+    const source = sourceIds[event.id];
+    const key = isLifecycleEvent(event.change)
+      ? `event:${event.sequence}`
+      : event.change === "external"
+        ? `external:${event.id}`
+        : source !== undefined
+          ? `source:${source}`
+          : `record:${event.id}`;
+    if (sourceId === undefined || key === `source:${sourceId}`) {
+      groups.set(key, [...(groups.get(key) ?? []), event]);
+    }
   }
+  return [...groups.values()]
+    .filter((members) => members[0]!.sequence < before)
+    .toSorted((a, b) => b[0]!.sequence - a[0]!.sequence)
+    .slice(0, limit)
+    .map((members) => ({ row: members[0]!, members }));
 }
 
 /** Project exact published snapshots into logical events BEFORE cursor paging.
@@ -154,9 +271,9 @@ export function recentActivity(
   );
   syncRecentProjection(db, scope);
   // Reuse this history join in both event branches. The projection holds the
-  // plan and receipt fields, so no publication plan is parsed per read.
-  const rows = db
-    .prepare(`
+  // plan and receipt fields, so no publication plan is parsed per read. Record
+  // eligibility is applied while streaming, newest first.
+  const statement = db.prepare(`
     WITH published AS MATERIALIZED (
       SELECT p.request, q.operation, q.target_id, q.at, q.reason, q.replacement_id, p.id AS record_id, p.kind, p.type, p.title,
         (SELECT MIN(h.sequence) FROM history h WHERE h.scope=p.scope
@@ -183,67 +300,66 @@ export function recentActivity(
           WHEN h.provenance='external-edit' THEN 'external' ELSE 'observed' END AS change,
         NULL, NULL, NULL, NULL, NULL
       FROM history h
-      WHERE h.scope=? AND h.id IN (SELECT value FROM json_each(?)) AND h.provenance!='conversion'
+      WHERE h.scope=? AND h.provenance!='conversion'
         AND (h.sequence IN (SELECT sequence FROM plain) OR h.sequence NOT IN (SELECT sequence FROM any_published))
-    ), visible AS (
-      SELECT * FROM events WHERE sequence<=? AND id NOT IN (SELECT value FROM json_each(?))
     )
-    ${
-      input.groupBySource
-        ? `, ranked AS (
-      SELECT *, ROW_NUMBER() OVER (PARTITION BY CASE WHEN change IN ('corrected','withdrawn') THEN 'event:'||sequence ELSE 'record:'||id END ORDER BY sequence DESC) AS rank FROM visible
-    ), source_map AS MATERIALIZED (
-      -- Parse the record-to-source map once; json_extract on the parameter per
-      -- row reparsed the whole map for every history event.
-      SELECT key AS id, value AS source FROM json_each(?)
-    ), keyed AS (
-      SELECT r.*, CASE WHEN r.change IN ('corrected','withdrawn') THEN 'event:'||r.sequence WHEN r.change='external' THEN 'external:'||r.id ELSE COALESCE('source:'||s.source, 'record:'||r.id) END AS group_key FROM ranked r LEFT JOIN source_map s ON s.id=r.id WHERE r.rank=1
-    ), grouped AS (
-      SELECT MAX(sequence) AS sequence, json_group_array(json_object('sequence',sequence,'id',id,'at',at,'change',change,'kind',kind,'type',type,'reason',reason,'replacementId',replacementId,'title',title)) AS members FROM keyed WHERE (? IS NULL OR group_key='source:'||?) GROUP BY group_key
-    ) SELECT * FROM grouped WHERE sequence<? ORDER BY sequence DESC LIMIT ?`
-        : "SELECT * FROM visible WHERE sequence<? ORDER BY sequence DESC LIMIT ?"
-    }
-  `)
-    .all(
-      scope,
-      scope,
-      JSON.stringify(active.map((r) => r.id)),
-      upperSequence,
-      JSON.stringify(fixtureIds),
-      ...(input.groupBySource
-        ? [JSON.stringify(sourceIds), input.sourceId ?? null, input.sourceId ?? null]
-        : []),
-      input.beforeSequence ?? upperSequence + 1,
-      (input.limit ?? 20) + 1,
-    );
-  const items = rows.slice(0, input.limit ?? 20).map((raw) => {
-    // Newest member first: it supplies the row, and later counts iterate in this order.
-    const members = raw.members
-      ? (JSON.parse(String(raw.members)) as Array<Record<string, string | number | null>>).toSorted(
-          (a, b) => Number(b.sequence) - Number(a.sequence),
-        )
-      : undefined;
-    const row = members?.[0] ?? raw;
-    const current = byId.get(String(row.id));
-    const item: Item = {
+    SELECT * FROM events WHERE sequence<=? AND sequence<? ORDER BY sequence DESC
+  `);
+  const fixtures = new Set(fixtureIds);
+  const limit = (input.limit ?? 20) + 1,
+    before = input.beforeSequence ?? upperSequence + 1;
+  const visible: RecentEvent[] = [];
+  // Grouping ranks every visible event; the flat list stops at its page.
+  for (const row of statement.iterate(
+    scope,
+    scope,
+    upperSequence,
+    input.groupBySource ? upperSequence + 1 : before,
+  )) {
+    const event: RecentEvent = {
       sequence: Number(row.sequence),
       id: String(row.id),
       at: String(row.at),
-      kind: String(row.kind ?? current!.kind),
-      type: String(row.type ?? current!.type),
+      change: String(row.change),
+      kind: nullableText(row.kind),
+      type: nullableText(row.type),
+      reason: nullableText(row.reason),
+      replacementId: nullableText(row.replacementId),
+      title: nullableText(row.title),
+    };
+    if (fixtures.has(event.id) || (!isLifecycleEvent(event.change) && !byId.has(event.id))) {
+      continue;
+    }
+    visible.push(event);
+    if (!input.groupBySource && visible.length === limit) {
+      break;
+    }
+  }
+  const rows: { row: RecentEvent; members?: RecentEvent[] }[] = input.groupBySource
+    ? groupBySource(visible, sourceIds, input.sourceId, before, limit)
+    : visible.map((row) => ({ row }));
+  const items = rows.slice(0, input.limit ?? 20).map(({ row, members }) => {
+    // Newest member first: it supplies the row, and later counts iterate in this order.
+    const current = byId.get(row.id);
+    const item: Item = {
+      sequence: row.sequence,
+      id: row.id,
+      at: row.at,
+      kind: row.kind ?? current!.kind,
+      type: row.type ?? current!.type,
       change: row.change as Item["change"],
     };
     if (item.change === "corrected" || item.change === "withdrawn") {
       // Identify the historical item under an explicit lifecycle label, without
       // resurfacing its body or evidence as current knowledge.
       if (row.title) {
-        item.title = String(row.title);
+        item.title = row.title;
       }
       if (row.reason) {
-        item.reason = String(row.reason);
+        item.reason = row.reason;
       }
       if (row.replacementId) {
-        item.replacementId = String(row.replacementId);
+        item.replacementId = row.replacementId;
         item.replacementActive = byId.has(item.replacementId);
         const replacement = byId.get(item.replacementId);
         if (replacement) {
@@ -260,7 +376,7 @@ export function recentActivity(
       source = sourceId ? byId.get(sourceId) : undefined;
     if (members && source && !["corrected", "withdrawn", "external"].includes(item.change)) {
       const records = members
-        .map((m) => byId.get(String(m.id)))
+        .map((m) => byId.get(m.id))
         .filter((r): r is LoadedRecord => Boolean(r));
       const counts: Record<string, number> = {};
       const attendees = new Set<string>();
@@ -287,7 +403,7 @@ export function recentActivity(
           Object.assign(
             recordSummary(r),
             {
-              change: String(members.find((member) => member.id === r.id)?.change ?? "observed"),
+              change: members.find((member) => member.id === r.id)?.change ?? "observed",
             },
             r.kind === "claim" ? { card: claimCard(r, active) } : {},
           ),
@@ -295,8 +411,8 @@ export function recentActivity(
         truncated: records.length > (input.recordOffset ?? 0) + 20,
         nextRecordOffset:
           records.length > (input.recordOffset ?? 0) + 20 ? (input.recordOffset ?? 0) + 20 : null,
-        firstSaved: String(members.at(-1)!.at),
-        lastSaved: String(members[0]!.at),
+        firstSaved: members.at(-1)!.at,
+        lastSaved: members[0]!.at,
       };
       if (input.includeEndpoints) {
         const ids = new Set(
