@@ -30,6 +30,12 @@ import type { StoreState } from "./stores-contract.js";
 import { Stores } from "./stores.js";
 
 type Handlers = FeatureHandlers<typeof contract>;
+// StorageClient.call with its per-operation input tuple erased, for calls made with a generic Op.
+type StorageCall<Op extends keyof StorageOperations> = (
+  op: Op,
+  access: VaultAccess,
+  input?: unknown,
+) => Promise<Awaited<ReturnType<StorageOperations[Op]>>>;
 type StoreHandlers = Omit<
   Handlers,
   | "stores_snapshot"
@@ -194,13 +200,8 @@ export function createKnowledgeService(
           context,
           write,
           (runtime, access) =>
-            (
-              runtime.client.call as (
-                op: Op,
-                access: VaultAccess,
-                input?: unknown,
-              ) => Promise<Awaited<ReturnType<StorageOperations[Op]>>>
-            )(op, access, input),
+            // SAFETY: the host validated input against this operation's schema; erases the per-Op rest tuple.
+            (runtime.client.call as StorageCall<Op>)(op, access, input),
           whenEmpty,
         );
     // Agent-only changes reject (never throw synchronously) for other callers.
@@ -212,13 +213,11 @@ export function createKnowledgeService(
       <Op extends "save" | "createClaim" | "createRelationship">(op: Op) =>
       (input: unknown, context: FeatureInvocationContext) =>
         use(context, true, (runtime, access) =>
-          (
-            runtime.client.call as (
-              op: Op,
-              access: VaultAccess,
-              input: unknown,
-            ) => Promise<Awaited<ReturnType<StorageOperations[Op]>>>
-          )(op, access, { value: input, actor: context.source === "tool" ? "agent" : "operator" }),
+          // SAFETY: the host validated input against this operation's schema; erases the per-Op rest tuple.
+          (runtime.client.call as StorageCall<Op>)(op, access, {
+            value: input,
+            actor: context.source === "tool" ? "agent" : "operator",
+          }),
         );
     const now = () => new Date().toISOString();
     return {
@@ -421,12 +420,14 @@ export function createKnowledgeService(
           );
         } catch (e) {
           // A provisioned store that fails its identity checks is reported, never replaced.
+          // SAFETY: the store runtime and storage client reject only with Error objects.
           if (!(e as Error).message.includes("identity or storage is unavailable")) {
             throw e;
           }
           return notReady(
             access.agentId,
             "unavailable",
+            // SAFETY: the store runtime and storage client reject only with Error objects.
             `This store couldn't be opened. ${(e as Error).message}`,
           );
         }
@@ -478,7 +479,7 @@ export function createKnowledgeService(
         truncated: false,
         checkedAt: now(),
       })),
-    } as StoreHandlers;
+    };
   };
 
   const defaults = storeHandlers();
@@ -494,6 +495,7 @@ export function createKnowledgeService(
       if (context.source !== "session-action") {
         throw operatorOnly();
       }
+      // SAFETY: an unknown name reads undefined, which the membership check below rejects.
       const operation = contract.operations[input.operation as keyof StoreHandlers];
       if (!operation || !(input.operation in defaults) || operation.kind !== kind) {
         throw new Error(`Unknown ${kind} operation: ${input.operation}.`);
@@ -505,6 +507,7 @@ export function createKnowledgeService(
       if (!Check(operation.input, input.input)) {
         throw new Error(`Invalid input for ${input.operation}.`);
       }
+      // SAFETY: input.operation is a StoreHandlers key (checked above); input.input passed its own schema.
       const handler = storeHandlers(input.agent)[input.operation as keyof StoreHandlers] as (
         input: unknown,
         context: FeatureInvocationContext,
@@ -535,5 +538,5 @@ export function createKnowledgeService(
     agent_query: proxy("query"),
     agent_action: proxy("action"),
     maintenance_status,
-  } as Handlers;
+  };
 }

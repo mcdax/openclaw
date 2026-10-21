@@ -6,7 +6,7 @@ type Mode = "all" | "any" | "phrase" | "exact";
 export type SearchState = {
   query: string;
   mode: Mode;
-  kind: string;
+  kind: "" | "page" | "claim" | "relationship";
   type: string;
   tag: string;
   lifecycle: "active" | "superseded" | "all";
@@ -22,7 +22,7 @@ export async function loadSearch(
     lifecycle: state.lifecycle,
     offset: state.offset,
     limit: 20,
-    ...(state.kind ? { kind: state.kind as "page" | "claim" | "relationship" } : {}),
+    ...(state.kind ? { kind: state.kind } : {}),
     ...(state.type ? { type: state.type } : {}),
     ...(state.tag ? { tag: state.tag } : {}),
   };

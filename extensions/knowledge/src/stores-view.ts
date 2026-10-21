@@ -322,14 +322,14 @@ function changeMenu(
   });
   menu.addEventListener("keydown", (event) => {
     const items = [...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")],
-      at = items.indexOf(document.activeElement as HTMLButtonElement);
+      at = items.findIndex((item) => item === document.activeElement);
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       items[(at + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
     }
   });
   menu.addEventListener("toggle", (event) => {
-    if ((event as ToggleEvent).newState === "closed" && menu.contains(document.activeElement)) {
+    if (event.newState === "closed" && menu.contains(document.activeElement)) {
       trigger.focus();
     }
   });

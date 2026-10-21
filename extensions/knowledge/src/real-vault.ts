@@ -111,6 +111,7 @@ export class RealVault {
       scopeStamp = await inspectScope();
     } catch (e) {
       if (
+        // SAFETY: lstat, realpath and unavailable() throw Error objects; code is optional on ErrnoException.
         (e as NodeJS.ErrnoException).code === "ENOENT" &&
         access.scope.visibility === "conversation"
       ) {

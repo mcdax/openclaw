@@ -95,6 +95,7 @@ export function readStoresSection(hostConfig: unknown): unknown {
     if (!node || typeof node !== "object") {
       return {};
     }
+    // SAFETY: node is a non-null object (checked above); an absent key reads undefined.
     node = (node as Record<string, unknown>)[key];
   }
   return node ?? {};
@@ -136,10 +137,10 @@ export function parseMembership(raw: unknown): Membership {
     invalid = new Set<string>();
   if (!Check(StoresSection, raw) || Object.keys(raw).some((key) => !storeKeyPattern.test(key))) {
     // Salvage agent names so the affected agents are reported, never defaulted.
-    for (const entry of Object.values(raw && typeof raw === "object" ? raw : {})) {
-      for (const agent of Array.isArray((entry as { agents?: unknown })?.agents)
-        ? (entry as { agents: unknown[] }).agents
-        : []) {
+    const entries: unknown[] = Object.values(raw && typeof raw === "object" ? raw : {});
+    for (const entry of entries) {
+      const agents = entry && typeof entry === "object" && "agents" in entry ? entry.agents : [];
+      for (const agent of Array.isArray(agents) ? agents : []) {
         if (typeof agent === "string") {
           invalid.add(agent);
         }

@@ -21,6 +21,7 @@ export function markdownView(
   const root = document.createElement("div");
   root.className = "knowledge-markdown";
   root.append(
+    // SAFETY: markdown is a Marked instance configured with async: false, so parse returns a string.
     DOMPurify.sanitize(markdown.parse(source) as string, {
       RETURN_DOM_FRAGMENT: true,
       ALLOWED_TAGS: [

@@ -38,12 +38,9 @@ export function prepareEvidenceRevision(
   for (const key of [
     "revision",
     "updated_at",
-    ...(input.evidence !== undefined ? ["evidence"] : []),
-  ]) {
-    doc.set(
-      key,
-      doc.createNode((metadata as Record<string, unknown>)[key], { aliasDuplicateObjects: false }),
-    );
+    ...(input.evidence !== undefined ? (["evidence"] as const) : []),
+  ] satisfies (keyof typeof metadata)[]) {
+    doc.set(key, doc.createNode(metadata[key], { aliasDuplicateObjects: false }));
   }
   doc.set("evidence_change", {
     reason: input.reason,

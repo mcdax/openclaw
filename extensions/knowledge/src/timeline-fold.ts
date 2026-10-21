@@ -35,6 +35,7 @@ export function foldTimeline(root: HTMLElement) {
       node = node.nextElementSibling
     ) {
       if (node.tagName === "UL") {
+        // SAFETY: an element whose tagName is "UL" is an HTML ul element.
         lists.push(node as HTMLUListElement);
       }
     }

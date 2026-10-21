@@ -6,7 +6,8 @@ type Ontology = FeatureOutput<typeof contract, "ontology"> & {
   definitions: NonNullable<FeatureOutput<typeof contract, "ontology">["definitions"]>;
 };
 type Definition = Ontology["definitions"][number];
-const categories = [
+type Category = { id: string; label: string; subtitle: string; icon: IconName };
+const categories: Category[] = [
   {
     id: "entity",
     label: "People & things",
@@ -38,7 +39,7 @@ const categories = [
     icon: "pencil",
   },
 ];
-const relationshipGroups = [
+const relationshipGroups: (Category & { names: string[] })[] = [
   {
     id: "people",
     label: "People & responsibility",
@@ -244,12 +245,17 @@ export function ontologyView(
     const groups = (mode === "page" ? categories : relationshipGroups).filter((g) =>
       definitions.some((d) => categoryOf(d) === g.id),
     );
-    const activeNavigation = navigation.contains(document.activeElement)
-      ? (document.activeElement as HTMLElement).dataset.category
-      : undefined;
+    const focused = document.activeElement;
+    const activeNavigation =
+      focused instanceof HTMLElement && navigation.contains(focused)
+        ? focused.dataset.category
+        : undefined;
     navigation.replaceChildren();
     body.replaceChildren();
-    for (const group of [{ id: "all", label: "All categories", icon: "book" }, ...groups]) {
+    for (const group of [
+      { id: "all", label: "All categories", icon: "book" as const },
+      ...groups,
+    ]) {
       const count = definitions.filter(
         (d) => group.id === "all" || categoryOf(d) === group.id,
       ).length;
@@ -261,7 +267,7 @@ export function ontologyView(
       control.setAttribute("aria-pressed", String(selected === group.id));
       const icon = el("span", undefined, "knowledge-category-icon");
       icon.setAttribute("aria-hidden", "true");
-      icon.append(glyph(group.icon as IconName));
+      icon.append(glyph(group.icon));
       control.append(
         icon,
         el("span", group.label),
@@ -291,7 +297,7 @@ export function ontologyView(
         title = el("div");
       const icon = el("span", undefined, "knowledge-group-icon");
       icon.setAttribute("aria-hidden", "true");
-      icon.append(glyph(group.icon as IconName));
+      icon.append(glyph(group.icon));
       title.append(el("h3", group.label), el("p", group.subtitle));
       heading.append(icon, title, el("span", String(items.length), "knowledge-group-count"));
       const grid = el("div", undefined, "knowledge-type-grid");

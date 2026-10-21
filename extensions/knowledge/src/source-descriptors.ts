@@ -144,6 +144,7 @@ function mapBasis(value: unknown, map: (value: unknown) => unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Invalid evidence basis.");
   }
+  // SAFETY: value is a non-null, non-array object (checked above).
   const basis = value as Record<string, unknown>;
   if (!Array.isArray(basis.evidence)) {
     throw new Error("Missing basis evidence.");
@@ -159,6 +160,7 @@ export function mapMetadataEvidence(
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Invalid evidence metadata.");
   }
+  // SAFETY: value is a non-null, non-array object (checked above), so its copy is a string-keyed record.
   const metadata = { ...value } as Record<string, unknown>;
   if (metadata.evidence !== undefined) {
     if (!Array.isArray(metadata.evidence)) {
@@ -184,6 +186,7 @@ export function mapMetadataEvidence(
     ) {
       throw new Error("Invalid identity metadata.");
     }
+    // SAFETY: identity is a non-null, non-array object (checked above), so its copy is a string-keyed record.
     const identity = { ...metadata.identity } as Record<string, unknown>;
     if (identity.candidates !== undefined) {
       if (!Array.isArray(identity.candidates)) {

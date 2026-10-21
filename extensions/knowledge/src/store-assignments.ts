@@ -40,8 +40,13 @@ export function createStoreOperations(stores: Stores) {
   const displayName = (agent: string) => {
     try {
       return (
-        api.runtime.agent.resolveAgentIdentity(stores.hostConfig() as never, agent)?.name?.trim() ||
-        agent
+        api.runtime.agent
+          .resolveAgentIdentity(
+            // SAFETY: resolveAgentIdentity only reads the config; the host snapshot is typed deeply readonly.
+            stores.hostConfig() as Parameters<typeof api.runtime.agent.resolveAgentIdentity>[0],
+            agent,
+          )
+          ?.name?.trim() || agent
       );
     } catch {
       return agent;
@@ -91,6 +96,7 @@ export function createStoreOperations(stores: Stores) {
       });
     }
     for (const [binding] of Object.entries(registry?.bindings ?? {})) {
+      // SAFETY: registry bindings are only ever written as `agent:`/`named:`-prefixed Binding values.
       const [kind, id] = binding.split(/:(.*)/s) as [string, string];
       if (kind === "named" && !membership.section[id]) {
         entries.push({
@@ -384,9 +390,11 @@ export function createStoreOperations(stores: Stores) {
       if (raced?.intent === intent) {
         return status({ requestId: input.requestId }, context);
       }
+      // SAFETY: the registry client rejects only with Error objects.
       return { outcome: "conflict", message: `${(e as Error).message} Nothing was changed.` };
     }
     stores.activeChange = input.requestId;
+    // SAFETY: widens the literal to Outcome; the cutover callback reassigns it, which narrowing cannot see.
     let outcome = "applied" as Outcome,
       message = "Assignment saved.";
     try {
@@ -407,7 +415,7 @@ export function createStoreOperations(stores: Stores) {
           message =
             e instanceof ConfigConflict
               ? "Store settings changed while saving. Nothing was changed; review and save again."
-              : `Saving settings failed: ${(e as Error).message}`;
+              : `Saving settings failed: ${(e as Error).message}`; // SAFETY: config writes throw only Error objects.
           // A failed write before persistence leaves config unchanged; if the
           // outcome is uncertain the journal stays pending for reconciliation.
           if (outcome === "conflict") {
@@ -467,6 +475,7 @@ function writeStoresSection(draft: Record<string, unknown>, section: StoresSecti
   let node = draft;
   for (const key of STORES_CONFIG_PATH.slice(0, -1)) {
     const child = node[key];
+    // SAFETY: the node is an existing non-null config object (checked) or a fresh {}.
     node = (node[key] = child && typeof child === "object" ? child : {}) as Record<string, unknown>;
   }
   node[STORES_CONFIG_PATH.at(-1)!] = section;

@@ -10,6 +10,7 @@ export function ask(
 ) {
   const { s, root, errorText, agentName, askLabel } = ui;
   root.querySelector(".knowledge-chat-handoff")?.remove();
+  // SAFETY: only focus() is called on it, which every focusable HTML or SVG element implements.
   const previousFocus = document.activeElement as HTMLElement | null;
   const panel = el("dialog", undefined, "knowledge-chat-handoff knowledge-surface");
   panel.setAttribute(

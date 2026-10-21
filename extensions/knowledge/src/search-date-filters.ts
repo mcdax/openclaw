@@ -103,6 +103,7 @@ export function temporalFilterForm(
     const next = {
       since: inputs.since.value.trim(),
       until: inputs.until.value.trim(),
+      // SAFETY: field is the select built above whose option values are exactly the keys of fields.
       timeField: field.value as TemporalSelection["timeField"],
     };
     error.textContent = temporalSelectionError(next);

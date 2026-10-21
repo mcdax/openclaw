@@ -42,9 +42,7 @@ export function readLocation(params: Readonly<Record<string, string>> = {}): Kno
   const view = params.view ?? "",
     origin = params.origin ?? "",
     timeField = params.timeField ?? "";
-  const tab = ["browse", "search", "settings"].includes(view)
-    ? (view as KnowledgeLocation["tab"])
-    : "recent";
+  const tab = (["browse", "search", "settings"] as const).find((t) => t === view) ?? "recent";
   const upperSequence = integer(params.upper),
     beforeSequence = integer(params.before);
   const offset = integer(params.offset, 500);
@@ -73,9 +71,9 @@ export function readLocation(params: Readonly<Record<string, string>> = {}): Kno
     back: validBack ? back : [],
     since: text(params.since, 40),
     until: text(params.until, 40),
-    timeField: ["recorded_at", "updated_at", "due_at"].includes(timeField)
-      ? (timeField as KnowledgeLocation["timeField"])
-      : "occurred_at",
+    timeField:
+      (["recorded_at", "updated_at", "due_at"] as const).find((f) => f === timeField) ??
+      "occurred_at",
     ...(upperSequence && beforeSequence && beforeSequence <= upperSequence
       ? { cursor: { upperSequence, beforeSequence } }
       : {}),

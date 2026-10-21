@@ -366,6 +366,7 @@ export function fileStamp(root: string, relative: string): string {
     const s = fs.lstatSync(`${root}/${relative}`, { bigint: true });
     return `${s.mode}:${s.dev}:${s.ino}:${s.size}:${s.mtimeNs}:${s.ctimeNs}`;
   } catch (e) {
+    // SAFETY: lstatSync throws Node Error objects; code is optional on ErrnoException.
     return `error:${(e as NodeJS.ErrnoException).code ?? "unknown"}`;
   }
 }

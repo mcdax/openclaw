@@ -34,7 +34,7 @@ function sameScope(a: unknown, b: Scope): boolean {
   if (!a || typeof a !== "object" || !Check(Envelope.properties.scope, a)) {
     return false;
   }
-  const scope = a as Scope;
+  const scope = a;
   return (
     scope.visibility === b.visibility &&
     (scope.visibility !== "conversation" ||
@@ -274,7 +274,7 @@ export class VaultScanner {
               file,
               "invalid-record",
               this.scope.visibility === "sample"
-                ? (e as Error).message
+                ? (e as Error).message // SAFETY: reading and parsing records throws only Error objects.
                 : "Record is unreadable or malformed; original file preserved.",
             );
             continue;
@@ -288,7 +288,9 @@ export class VaultScanner {
             // A moved/mislabeled record cannot acquire the containing partition's authority.
             const candidate =
               metadata && typeof metadata === "object"
-                ? (metadata as { scope?: unknown }).scope
+                ? "scope" in metadata
+                  ? metadata.scope
+                  : undefined
                 : undefined;
             if (!sameScope(candidate, this.scope)) {
               const issue =
@@ -336,7 +338,7 @@ export class VaultScanner {
           } catch (e) {
             const issue =
               this.scope.visibility === "sample"
-                ? (e as Error).message
+                ? (e as Error).message // SAFETY: reading and validating records throws only Error objects.
                 : "Record is unreadable or malformed; original file preserved.";
             remember({ issue });
             add(file, "invalid-record", issue);
@@ -451,7 +453,7 @@ export class VaultScanner {
               field.type === "string[]"
                 ? Array.isArray(value) && value.every((x) => typeof x === "string")
                 : typeof value === field.type;
-            if (!correct || (field.values && !field.values.includes(value as string))) {
+            if (!correct || (field.values && !field.values.some((allowed) => allowed === value))) {
               problem("field-type", `Invalid field: ${field.name}`);
             }
           }

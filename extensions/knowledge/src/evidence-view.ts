@@ -260,13 +260,13 @@ export function originalDownload(
     try {
       // Stream to disk when the browser supports it; otherwise use its Blob
       // download facility. Never render source HTML/SVG in the app's origin.
-      const picker = (
-        window as unknown as {
-          showSaveFilePicker?: (options: {
-            suggestedName: string;
-          }) => Promise<{ createWritable(): Promise<NonNullable<typeof writer>> }>;
-        }
-      ).showSaveFilePicker;
+      type PickerWindow = {
+        showSaveFilePicker?: (options: {
+          suggestedName: string;
+        }) => Promise<{ createWritable(): Promise<NonNullable<typeof writer>> }>;
+      };
+      // SAFETY: feature detection; the optional File System Access picker is called only when present.
+      const picker = (window as unknown as PickerWindow).showSaveFilePicker;
       if (picker) {
         writer = await (await picker.call(window, { suggestedName: name })).createWritable();
       }

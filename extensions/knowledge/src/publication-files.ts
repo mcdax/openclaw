@@ -65,6 +65,7 @@ export class PublicationFiles {
           fs.mkdirSync(current, { mode: 0o700 });
           this.sync(parent);
         } catch (e) {
+          // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
           if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
             throw e;
           }
@@ -87,6 +88,7 @@ export class PublicationFiles {
     try {
       filename = this.guard(relative);
     } catch (e) {
+      // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
@@ -96,6 +98,7 @@ export class PublicationFiles {
     try {
       before = fs.lstatSync(filename);
     } catch (e) {
+      // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
@@ -184,6 +187,7 @@ export class PublicationFiles {
       staged = fs.lstatSync(this.guard(change.stage));
       current = fs.lstatSync(this.guard(change.path));
     } catch (e) {
+      // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
         return;
       }
@@ -227,6 +231,7 @@ export class PublicationFiles {
           fs.linkSync(this.guard(change.backup), this.guard(change.path));
           this.sync(path.dirname(this.guard(change.path)));
         } catch (e) {
+          // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
           if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
             throw e;
           }
@@ -250,6 +255,7 @@ export class PublicationFiles {
     try {
       fs.linkSync(this.guard(change.stage), this.guard(change.path, true));
     } catch (e) {
+      // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
       if ((e as NodeJS.ErrnoException).code === "EEXIST") {
         throw new Error("conflict", { cause: e });
       }
@@ -287,6 +293,7 @@ export class PublicationFiles {
         directory = path.dirname(this.guard(`${relative}/.probe`));
         names = fs.readdirSync(directory);
       } catch (e) {
+        // SAFETY: fs calls and guard() throw Node Error objects; code is optional on ErrnoException.
         if ((e as NodeJS.ErrnoException).code === "ENOENT") {
           return;
         }

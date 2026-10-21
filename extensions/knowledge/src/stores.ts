@@ -65,14 +65,12 @@ export class Stores {
   }
   /** Host agents, as configured. Knowledge binds only IDs it can represent. */
   agents(): string[] {
-    return listAgentIds(this.hostConfig() as Parameters<typeof listAgentIds>[0]);
+    return listAgentIds(this.hostConfig());
   }
   /** The configured default agent, or undefined when several agents are
    * configured without one (operators must then choose an agent explicitly). */
   defaultAgent(): string | undefined {
-    return tryResolveDefaultAgentId(
-      this.hostConfig() as Parameters<typeof tryResolveDefaultAgentId>[0],
-    );
+    return tryResolveDefaultAgentId(this.hostConfig());
   }
   /** The membership Knowledge enforces: the registry's reconciled section. */
   membership(): Membership {
@@ -320,6 +318,7 @@ export class Stores {
     const seen = new Set<string>(),
       targets: Awaited<ReturnType<Stores["maintenanceTargets"]>> = [];
     for (const binding of [...bindings].toSorted()) {
+      // SAFETY: every binding here is an `agent:`- or `named:`-prefixed Binding built above.
       const [kind, key] = binding.split(/:(.*)/s) as [string, string];
       const label =
         kind === "named" ? (membership.section[key]?.label ?? key) : `${key} (agent store)`;
@@ -438,7 +437,7 @@ function namesSharer(section: unknown, rebind: { from: string; to: string }) {
     agent = rebind.from.slice("agent:".length);
   const store =
     section && typeof section === "object"
-      ? (section as Record<string, { agents?: unknown }>)[key]
+      ? (section as Record<string, { agents?: unknown }>)[key] // SAFETY: non-null object (checked); agents verified below.
       : undefined;
   return Array.isArray(store?.agents) && store.agents.includes(agent);
 }

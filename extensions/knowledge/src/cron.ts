@@ -66,6 +66,7 @@ export function parseCron(expr: string, timeZone: string): Cron {
   } catch {
     throw new Error(`Unknown time zone "${timeZone}".`);
   }
+  // SAFETY: parts has exactly five entries (checked above), so the map yields five Fields.
   const [minute, hour, dom, month, dow] = parts.map((p, i) => field(p, BOUNDS[i]!)) as [
     Field,
     Field,

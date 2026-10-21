@@ -105,6 +105,7 @@ export async function pageEditor(
         control.append(option);
       }
     }
+    // SAFETY: metadata is the record's frontmatter object; absent keys read undefined, narrowed below.
     const current = (record?.metadata as Record<string, unknown> | undefined)?.[key];
     control.value =
       restored?.values?.[key] ??
@@ -421,6 +422,7 @@ export async function pageEditor(
           submitted = {
             ...common,
             type: type.value,
+            // SAFETY: parsed is a non-null, non-array JSON object (checked above).
             fields: parsed as Record<string, unknown>,
             aliases: lines("aliases"),
             tags: lines("tags"),
@@ -471,7 +473,7 @@ export async function pageEditor(
           if (!Check(kind === "claim" ? ClaimInput : RelationshipInput, proposal)) {
             throw new Error("Check required attribution, evidence, record IDs and dates.");
           }
-          submitted = proposal as ClaimInput | RelationshipInput;
+          submitted = proposal;
         }
       }
       persist();
@@ -481,12 +483,14 @@ export async function pageEditor(
       for (const control of controls) {
         control.disabled = true;
       }
+      // submitted was built for kind above, or restored from a draft persisted with this kind
+      // whose payload drafts.ts checked against that kind's schema.
       const receipt =
         kind === "claim"
-          ? await feature.invoke("create_claim", submitted as ClaimInput)
+          ? await feature.invoke("create_claim", submitted as ClaimInput) // SAFETY: claim editor input.
           : kind === "relationship"
-            ? await feature.invoke("create_relationship", submitted as RelationshipInput)
-            : await feature.invoke("save_page", submitted as SavePage);
+            ? await feature.invoke("create_relationship", submitted as RelationshipInput) // SAFETY: as above.
+            : await feature.invoke("save_page", submitted as SavePage); // SAFETY: page editor input.
       if (receipt.state === "published") {
         recovery?.store.remove(draftKey);
         dialog.removeEventListener("close", showReopen);

@@ -18,6 +18,24 @@ import {
 import { loadingLabel } from "./page-state.js";
 import { formatSourceDate } from "./temporal.js";
 
+// Facet headings for ontology primitives; unknown primitives fall back to a humanized name.
+const PRIMITIVE_LABELS: Record<string, string> = {
+  entity: "People & things",
+  concept: "Ideas & projects",
+  media: "Sources & writing",
+  temporal: "Events & conversations",
+  annotation: "Annotations",
+};
+// Plural facet labels for built-in page types; other types keep their own label.
+const TYPE_LABELS: Record<string, string> = {
+  Person: "People",
+  Company: "Companies",
+  Project: "Projects",
+  Concept: "Concepts",
+  Meeting: "Meetings",
+  Note: "Notes",
+  Source: "Sources",
+};
 // Pages arrive newest-updated first, so rows group under day headings and show only the
 // time of day; the full timestamp stays in each time's tooltip.
 function pageTable(ui: Page, records: Summary[]) {
@@ -136,37 +154,9 @@ export function renderBrowse(
       )) {
       if (group !== def.primitive) {
         group = def.primitive;
-        facets.append(
-          el(
-            "h3",
-            (
-              {
-                entity: "People & things",
-                concept: "Ideas & projects",
-                media: "Sources & writing",
-                temporal: "Events & conversations",
-                annotation: "Annotations",
-              } as Record<string, string>
-            )[group] ?? human(group),
-            "knowledge-eyebrow",
-          ),
-        );
+        facets.append(el("h3", PRIMITIVE_LABELS[group] ?? human(group), "knowledge-eyebrow"));
       }
-      facet(
-        def.name,
-        (
-          {
-            Person: "People",
-            Company: "Companies",
-            Project: "Projects",
-            Concept: "Concepts",
-            Meeting: "Meetings",
-            Note: "Notes",
-            Source: "Sources",
-          } as Record<string, string>
-        )[def.label] ?? def.label,
-        def.recordCount,
-      );
+      facet(def.name, TYPE_LABELS[def.label] ?? def.label, def.recordCount);
     }
     facets.append(
       el(

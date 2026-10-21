@@ -114,6 +114,7 @@ export function encodeRecordEvidence(
     throw new Error("Expected closed frontmatter.");
   }
   const doc = parseDocument(match[1]!);
+  // SAFETY: record is a LoadedRecord, whose frontmatter vault-scan accepts only as a mapping with a valid scope.
   const previous = parseYaml(match[1]!) as Record<string, unknown>;
   for (const key of ["evidence", "attribution_confidence", "identity", "continuity"]) {
     if (

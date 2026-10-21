@@ -56,7 +56,7 @@ export class GitHistory {
         cwd: this.root,
         input,
         ...(inputFd !== undefined
-          ? { stdio: [inputFd, "pipe", "pipe"] as [number, "pipe", "pipe"] }
+          ? { stdio: [inputFd, "pipe", "pipe"] satisfies [number, "pipe", "pipe"] }
           : {}),
         encoding: "utf8",
         timeout,
@@ -70,6 +70,7 @@ export class GitHistory {
         },
       },
     );
+    // SAFETY: spawnSync reports spawn failures as Node system errors; code is optional on ErrnoException.
     if ((result.error as NodeJS.ErrnoException | undefined)?.code === "ENOENT") {
       throw new GitUnavailable("Git is not installed; local history is waiting for Git.");
     }
@@ -104,6 +105,7 @@ export class GitHistory {
     try {
       stat = fs.lstatSync(this.gitDir);
     } catch (e) {
+      // SAFETY: lstatSync throws Node Error objects; code is optional on ErrnoException.
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
         throw e;
       }

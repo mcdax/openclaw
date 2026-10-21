@@ -44,6 +44,7 @@ export class DraftStore {
     if (raw.length > 400000) {
       throw new Error("Stored draft is too large; it was preserved but not opened.");
     }
+    // SAFETY: every EditorDraft field is checked below before the value is returned; any other shape throws.
     const value = JSON.parse(raw) as EditorDraft;
     if (
       value.version !== 1 ||

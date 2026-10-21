@@ -205,7 +205,7 @@ const normalize = (value: string) =>
   value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLowerCase();
 
 /** True for a page type that names a person, company, concept, project or deal. */
-export function isFactEntity(data: Snapshot, record: LoadedRecord): boolean {
+export function isFactEntity(data: Snapshot, record: Pick<LoadedRecord, "type">): boolean {
   const definition = data.ontology?.definitions.find(
     (d) => d.definition.name === record.type,
   )?.definition;
@@ -229,7 +229,7 @@ function resolveStrict(data: Snapshot, query: string, withdrawn: Set<string>): S
     return { id: null, miss: "ambiguous" };
   }
   if (found.outcome === "found") {
-    const record = found.hits[0]!.record as LoadedRecord;
+    const record = found.hits[0]!.record;
     const page = data.records.find((r) => r.id === record.id) ?? record;
     return isFactEntity(data, page) ? { id: page.id } : { id: null, miss: "not_entity" };
   }

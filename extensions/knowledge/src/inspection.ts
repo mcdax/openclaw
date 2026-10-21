@@ -126,7 +126,7 @@ function boundRecord(result: RecordOutput, input: RecordInput, compact = false):
   }
   // Full metadata repeats every evidence descriptor; paged evidence remains available.
   // Compact domain fields are a preview; full metadata keeps them for edits that replace fields.
-  const metadata = result.record?.metadata as { evidence?: unknown; fields?: unknown } | undefined;
+  const metadata = result.record?.metadata;
   if (metadata?.evidence !== undefined && size() > RECORD_RESPONSE_BYTES) {
     delete metadata.evidence;
     (result.omitted ??= []).push("metadata.evidence");

@@ -40,6 +40,7 @@ export class Maintenance {
     try {
       this.cron = parseCron(schedule, timezone);
     } catch (e) {
+      // SAFETY: parseCron throws only Error objects.
       this.configError = (e as Error).message;
     }
   }
@@ -108,6 +109,7 @@ export class Maintenance {
   pass(trigger: MaintenanceRun["trigger"], slot: number): Promise<void> {
     this.running ??= this.execute(trigger, slot)
       .catch((e: unknown) =>
+        // SAFETY: execute() rejects only with Error objects from the store runtime and storage client.
         this.log.warn(`Knowledge maintenance pass failed: ${(e as Error).message}`),
       )
       .finally(() => {
@@ -171,10 +173,12 @@ export class Maintenance {
         }
       } catch (e) {
         // Reload or reassignment ends the whole pass; anything else is this store's failure.
+        // SAFETY: the store runtime and storage client reject only with Error objects.
         if ((e as Error).message.includes("reloaded")) {
           throw e;
         }
         result.outcome = "failed";
+        // SAFETY: the store runtime and storage client reject only with Error objects.
         result.message = (e as Error).message.slice(0, 1000);
       }
     }
@@ -215,6 +219,7 @@ export class Maintenance {
 
   private async load(): Promise<State> {
     try {
+      // SAFETY: each State field is validated below before use; a non-object throws into the catch.
       const raw = JSON.parse(await readFile(this.file, "utf8")) as State;
       return {
         ...(typeof raw.nextRunAt === "number" ? { nextRunAt: raw.nextRunAt } : {}),

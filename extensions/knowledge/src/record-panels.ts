@@ -15,6 +15,15 @@ import {
 } from "./page-dom.js";
 import { icon } from "./ui-icons.js";
 
+// Plural group headings for built-in claim kinds; other kinds use their humanized label.
+const CLAIM_GROUP_LABELS: Record<string, string> = {
+  belief: "Beliefs",
+  commitment: "Commitments",
+  decision: "Decisions",
+  preference: "Preferences",
+  fact: "Facts",
+  event: "Events",
+};
 /** Sections of an open record whose rows load after the primary content commits. */
 export type RecordPanels = {
   id: string;
@@ -140,7 +149,7 @@ export async function recordPanels(ui: Page, view: RecordPanels) {
       group.append(card);
       const count = group.querySelectorAll(".knowledge-claim").length;
       group.querySelector("h4")!.textContent =
-        `${({ belief: "Beliefs", commitment: "Commitments", decision: "Decisions", preference: "Preferences", fact: "Facts", event: "Events" } as Record<string, string>)[kind] ?? label(kind)} · ${count}`;
+        `${CLAIM_GROUP_LABELS[kind] ?? label(kind)} · ${count}`;
     }
     const count = claims.querySelectorAll(".knowledge-claim").length;
     claims

@@ -32,10 +32,11 @@ export function viewingClient(
       return base.invoke(operation, input, options);
     }
     const proxy = contract.operations[operation].kind === "query" ? "agent_query" : "agent_action";
+    // SAFETY: the proxy validates the inner output against operation K's own output schema.
     return (await base.invoke(proxy, { agent, operation, input }, options)) as FeatureOutput<
       typeof contract,
       K
     >;
   };
-  return { ...base, invoke: invoke as Client["invoke"] };
+  return { ...base, invoke };
 }

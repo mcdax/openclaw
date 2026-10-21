@@ -104,6 +104,7 @@ export function parseOntology(path: string, raw: string, issues: Issue[]): Ontol
     issues.push({
       path,
       code: "invalid-ontology",
+      // SAFETY: the YAML parser and the checks above throw only Error objects.
       message: (e as Error).message.slice(0, 1000),
     });
     return { path, raw, valid: false, manifest: null };
@@ -289,6 +290,7 @@ export function resolveOntology(
     issues.push({
       path: root?.path ?? "ontology.yaml",
       code: "ontology-unavailable",
+      // SAFETY: resolution above throws only Error objects.
       message: (e as Error).message.slice(0, 1000),
     });
     return null;

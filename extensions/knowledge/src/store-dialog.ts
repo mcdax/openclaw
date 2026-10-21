@@ -25,6 +25,7 @@ export function storeDialog(
   const who = names(agentId),
     current = storeOf(snapshot, agentId);
   const dialog = el("dialog", undefined, "knowledge-store-dialog knowledge-surface"),
+    // SAFETY: only focus() is called on it, which every focusable HTML or SVG element implements.
     previousFocus = document.activeElement as HTMLElement | null;
   const heading = el("h3"),
     body = el("div", undefined, "knowledge-store-dialog-body"),

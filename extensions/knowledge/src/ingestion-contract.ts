@@ -34,6 +34,7 @@ export const SourceCheckOutput = Type.Object(
 const ref = Type.String({ pattern: "^(?:[a-zA-Z0-9][a-zA-Z0-9_-]{7,95}|@[a-z][a-z0-9_-]{0,39})$" });
 function localRefs<T extends TSchema>(schema: T) {
   const visit = (value: TSchema): TSchema => {
+    // SAFETY: TSchema is an empty interface; visited values are TypeBox JSON Schemas with these keywords.
     const shape = value as {
       pattern?: string;
       type?: string;
@@ -45,6 +46,7 @@ function localRefs<T extends TSchema>(schema: T) {
       return { ...rest, ...ref };
     }
     if (shape.type === "array") {
+      // SAFETY: TypeBox array schemas always carry an items schema.
       return { ...value, items: visit(shape.items as TSchema) };
     }
     if (shape.type === "object" && shape.properties) {
@@ -87,10 +89,12 @@ function compactBatchSchema<T extends TSchema>(schema: T) {
       definitions[name] ??= visit(original, true);
       return { $ref: `#/$defs/${name}` };
     }
+    // SAFETY: TSchema is an empty interface; a JSON Schema description keyword is a string.
     const { description: _description, ...compact } = original as TSchema & {
       description?: string;
     };
     const value: TSchema = compact;
+    // SAFETY: TSchema is an empty interface; visited values are TypeBox JSON Schemas with these keywords.
     const shape = value as {
       type?: string;
       anyOf?: { const?: unknown }[];
@@ -103,6 +107,7 @@ function compactBatchSchema<T extends TSchema>(schema: T) {
         type: _type,
         items: _items,
         ...bounds
+        // SAFETY: value is the array schema matched above; type and items are its JSON Schema keywords.
       } = value as TSchema & { type?: string; items?: TSchema };
       definitions.e ??= { type: "array", items: visit(Evidence) };
       return { ...bounds, $ref: "#/$defs/e" };

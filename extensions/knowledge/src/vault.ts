@@ -40,7 +40,10 @@ export class SampleVault extends VaultScanner {
     const timeMatches = temporalPredicate(input);
     const types = input.type ? expandTypes(data.ontology, input.type) : null;
     const current = eligible(data, undefined, false);
-    const facets = { kinds: {} as Record<string, number>, origins: {} as Record<string, number> };
+    const facets: { kinds: Record<string, number>; origins: Record<string, number> } = {
+      kinds: {},
+      origins: {},
+    };
     for (const r of current.filter((record) => record.kind === "claim")) {
       facets.kinds[r.type] = (facets.kinds[r.type] ?? 0) + 1;
       const origin = r.metadata.assertion_origin ?? "unknown";

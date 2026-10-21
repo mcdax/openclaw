@@ -28,7 +28,7 @@ function rewriteRecord(
   remove: (keyof Envelope)[] = [],
   body = previous.body,
 ): LoadedRecord {
-  const metadata = { ...previous.metadata, ...set } as Envelope;
+  const metadata: Envelope = { ...previous.metadata, ...set };
   for (const key of remove) {
     delete metadata[key];
   }

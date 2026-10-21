@@ -17,6 +17,7 @@ export async function loadVocabulary(feature: FeatureClient<typeof contract>, de
     result.definitions!.push(...(page.definitions ?? []));
     result.nextOffset = page.nextOffset;
   }
+  // SAFETY: catalog and definitions views always return definitions; later pages were appended above.
   return result as FeatureOutput<typeof contract, "ontology"> & {
     definitions: NonNullable<FeatureOutput<typeof contract, "ontology">["definitions"]>;
   };

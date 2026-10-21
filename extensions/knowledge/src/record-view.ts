@@ -193,8 +193,7 @@ export async function showDetail(
     }
     main.append(from);
   }
-  const lifecycle = meta as Record<string, unknown> | undefined;
-  const change = lifecycle?.lifecycle_change;
+  const change = meta?.lifecycle_change;
   const reason =
     change && typeof change === "object" && "reason" in change && typeof change.reason === "string"
       ? change.reason
@@ -208,23 +207,13 @@ export async function showDetail(
   } else if (reason && !reasonInVersions) {
     main.append(el("p", reason, "knowledge-notice"));
   }
-  if (typeof lifecycle?.superseded_by === "string") {
-    main.append(
-      button(
-        "View replacement →",
-        () => open(lifecycle.superseded_by as string),
-        "knowledge-quiet",
-      ),
-    );
+  const supersededBy = meta?.superseded_by;
+  if (typeof supersededBy === "string") {
+    main.append(button("View replacement →", () => open(supersededBy), "knowledge-quiet"));
   }
-  if (typeof lifecycle?.supersedes === "string" && r.kind !== "claim") {
-    main.append(
-      button(
-        "View original assertion",
-        () => open(lifecycle.supersedes as string),
-        "knowledge-quiet",
-      ),
-    );
+  const supersedes = meta?.supersedes;
+  if (typeof supersedes === "string" && r.kind !== "claim") {
+    main.append(button("View original assertion", () => open(supersedes), "knowledge-quiet"));
   }
   let versionsNode: HTMLElement | undefined;
   if (r.kind === "claim" && (meta?.supersedes || meta?.superseded_by)) {

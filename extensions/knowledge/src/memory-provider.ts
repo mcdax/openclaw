@@ -314,9 +314,7 @@ export function createKnowledgeMemoryRuntime(stores: Stores): MemoryProviderRunt
                         : {}),
                     },
                   })),
-                  coverage: (candidates.complete ? "complete" : "partial") as
-                    | "complete"
-                    | "partial",
+                  coverage: candidates.complete ? ("complete" as const) : ("partial" as const),
                   warning:
                     "Approved private candidates only; partial coverage means validation issues, the requested limit or the response budget omitted candidates.",
                 };
