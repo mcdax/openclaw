@@ -5,7 +5,7 @@ import { RECORD_MAX_BYTES } from "./limits.js";
 import { mergeRedirects, referenceIds } from "./merge.js";
 import { Envelope, type LoadedRecord } from "./model.js";
 import type { WithdrawInput } from "./mutation-contract.js";
-import { digest } from "./vault.js";
+import { digest } from "./scan-primitives.js";
 
 export function assertLifecycleTarget(
   records: LoadedRecord[],

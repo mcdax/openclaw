@@ -20,10 +20,11 @@ import {
   type SearchOutput,
   type LookupOutput,
 } from "./retrieval-contract.js";
+import { digest } from "./scan-primitives.js";
 import type { StorageTables } from "./storage-tables.js";
 import { temporalPredicate } from "./temporal-query.js";
 import { activeNow } from "./temporal.js";
-import { digest, type SampleVault } from "./vault.js";
+import type { SampleVault } from "./vault.js";
 
 type Snapshot = Awaited<ReturnType<SampleVault["scan"]>>;
 type Hit = SearchOutput["hits"][number];
