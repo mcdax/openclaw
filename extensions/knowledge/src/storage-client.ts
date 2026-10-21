@@ -16,8 +16,13 @@ type Call = {
   revoked?: unknown;
 };
 
-// SDK modules reachable from storage code in the worker.
-const SDK_MODULES = ["openclaw/plugin-sdk/feature-contract", "openclaw/plugin-sdk/routing"];
+// SDK modules reachable from storage and registry code in the workers.
+const SDK_MODULES = [
+  "openclaw/plugin-sdk/database-engine-worker-runtime",
+  "openclaw/plugin-sdk/feature-contract",
+  "openclaw/plugin-sdk/routing",
+  "openclaw/plugin-sdk/sqlite-worker-runtime",
+];
 // Resolve through whatever resolver the host installed for this plugin module.
 export function sdkUrls(): Record<string, string> {
   const urls: Record<string, string> = {},
