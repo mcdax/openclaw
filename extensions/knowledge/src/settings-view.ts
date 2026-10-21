@@ -180,7 +180,7 @@ export async function settings(ui: Page, n: number, target: HTMLElement) {
 }
 
 // After an applied assignment, refresh facts; reset the reading view if the viewed store moved.
-export function assignmentApplied(
+function assignmentApplied(
   ui: Page,
   result: FeatureOutput<typeof contract, "stores_change">,
   agent: string,

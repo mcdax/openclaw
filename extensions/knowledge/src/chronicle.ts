@@ -59,7 +59,7 @@ function reference(record: LoadedRecord, visible: Set<string>) {
 }
 
 /** Validate a day/week query and compare timestamp calendar days in the requested zone. */
-export function dayPredicate(input: DayInput): (value: string) => boolean {
+function dayPredicate(input: DayInput): (value: string) => boolean {
   dateInterval(input.date);
   if (input.date.length !== 10) {
     throw new Error("date must be YYYY-MM-DD.");

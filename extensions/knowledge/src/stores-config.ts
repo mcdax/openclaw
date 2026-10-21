@@ -3,16 +3,16 @@ import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 import { AGENT_ID, STORE_KEY } from "./stores-contract.js";
 export const agentIdPattern = new RegExp(AGENT_ID);
-export const storeKeyPattern = new RegExp(STORE_KEY);
+const storeKeyPattern = new RegExp(STORE_KEY);
 
-export const NamedStore = Type.Object(
+const NamedStore = Type.Object(
   {
     label: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
     agents: Type.Array(Type.String({ pattern: AGENT_ID }), { maxItems: 100 }),
   },
   { additionalProperties: false },
 );
-export type NamedStore = Static<typeof NamedStore>;
+type NamedStore = Static<typeof NamedStore>;
 export const StoresSection = Type.Record(Type.String({ pattern: STORE_KEY }), NamedStore, {
   additionalProperties: false,
 });
@@ -59,13 +59,13 @@ export const PluginConfig = Type.Object(
 export type PluginConfig = Static<typeof PluginConfig>;
 /** Scheduled maintenance settings; validated when scheduling, so a bad
  * expression is reported in the UI instead of disabling the plugin. */
-export type MaintenanceSettings = { enabled: boolean; schedule: string; timezone: string };
+type MaintenanceSettings = { enabled: boolean; schedule: string; timezone: string };
 export type Policy = {
   operatorRead: boolean;
   writesEnabled: boolean;
   maintenance: MaintenanceSettings;
 };
-export const DEFAULT_MAINTENANCE_SCHEDULE = "30 3 * * *";
+const DEFAULT_MAINTENANCE_SCHEDULE = "30 3 * * *";
 
 /** Config path owned by the no-reload rule and every membership write. */
 export const STORES_CONFIG_PATH = ["plugins", "entries", "knowledge", "config", "stores"] as const;

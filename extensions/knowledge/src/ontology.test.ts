@@ -6,8 +6,8 @@ import { stringify } from "yaml";
 import { contract } from "./contract.js";
 import { inspectOntology } from "./inspection.js";
 import { parseOntology, resolveOntology, expandTypes, inferType } from "./ontology.js";
-import { useTestTempDirs, defaultOrder } from "./test-support.js";
 import { sampleVaultRoot } from "./plugin-files.js";
+import { useTestTempDirs, defaultOrder } from "./test-support.js";
 import { SampleVault, digest } from "./vault.js";
 
 const tempDirs = useTestTempDirs();

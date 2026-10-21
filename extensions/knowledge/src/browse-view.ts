@@ -20,7 +20,7 @@ import { formatSourceDate } from "./temporal.js";
 
 // Pages arrive newest-updated first, so rows group under day headings and show only the
 // time of day; the full timestamp stays in each time's tooltip.
-export function pageTable(ui: Page, records: Summary[]) {
+function pageTable(ui: Page, records: Summary[]) {
   const table = el("table", undefined, "data-table knowledge-table"),
     head = el("thead"),
     headRow = el("tr");

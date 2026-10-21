@@ -75,7 +75,7 @@ type Item = Static<typeof RecentOutput>["items"][number];
  * Plans are parsed once per request, not on every read; the key comparisons
  * stop before the plan column. A projection written before an older plugin
  * version published (or removed) requests is repaired here. */
-export function syncRecentProjection(db: DatabaseSync, scope: string) {
+function syncRecentProjection(db: DatabaseSync, scope: string) {
   // A derived cache, so additive and version-independent: older plugin
   // versions ignore it and this function repairs whatever they published.
   db.exec(`CREATE TABLE IF NOT EXISTS recent_requests_v1 (

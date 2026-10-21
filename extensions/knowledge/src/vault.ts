@@ -18,7 +18,7 @@ import { withinBudget, compactSummary } from "./response-budget.js";
 import { eligible } from "./retrieval.js";
 import { temporalPredicate, type TimeFilter } from "./temporal-query.js";
 import { VaultScanner } from "./vault-scan.js";
-export { MAX_ENTRIES, digest, sameScope, type ScanResult, type ScanCache } from "./vault-scan.js";
+export { MAX_ENTRIES, digest, type ScanResult, type ScanCache } from "./vault-scan.js";
 
 // Scope is selected by the service from trusted authority, never from operation inputs.
 export class SampleVault extends VaultScanner {

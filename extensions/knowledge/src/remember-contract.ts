@@ -5,7 +5,7 @@ import { requestId, Receipt } from "./mutation-contract.js";
 /** Largest conversation excerpt one remember call retains; one attachment chunk. */
 export const REMEMBER_EXCERPT_MAX_BYTES = 16 * 1024;
 /** Most claims one remember call may save. */
-export const REMEMBER_ITEMS_MAX = 20;
+const REMEMBER_ITEMS_MAX = 20;
 
 export const RememberItem = Type.Object(
   {

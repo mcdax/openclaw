@@ -1,6 +1,6 @@
 import { Marked } from "marked";
 
-export const escapeHtml = (text: string) =>
+const escapeHtml = (text: string) =>
   text.replace(
     /[&<>"']/g,
     (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!,

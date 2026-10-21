@@ -33,7 +33,6 @@ import {
 import { StorageIngestion } from "./storage-ingestion.js";
 import { scopeKey } from "./storage-types.js";
 import { verifyRecords } from "./verification.js";
-export { scopeKey, type PublicationHook } from "./storage-types.js";
 
 export class KnowledgeStorage extends StorageIngestion {
   async trackRead<T>(

@@ -16,11 +16,6 @@ import {
 // Backslash or any C0 control character.
 const UNSAFE_NAME_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);
 
-/** Stamp a descriptor only through guarded scope-local parent directories. */
-export function sourceDescriptorStamp(root: string, relative: string): string {
-  return sourceDescriptorStamper(root)(relative);
-}
-
 /** Stamps descriptors for one pass (a scan or its cache check), guarding each
  * parent directory once instead of once per descriptor. Stamps only detect
  * change; every descriptor read is still guarded on its own. */

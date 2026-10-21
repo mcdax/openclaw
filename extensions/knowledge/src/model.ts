@@ -4,7 +4,7 @@ import { Check } from "typebox/value";
 export const text = (max = 200) => Type.String({ maxLength: max });
 export const name = Type.String({ pattern: "^[a-z][a-z0-9_-]{0,63}$" });
 export const id = Type.String({ pattern: "^[a-zA-Z0-9][a-zA-Z0-9_-]{7,95}$" });
-export const timestamp = Type.String({
+const timestamp = Type.String({
   pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$",
 });
 export const strings = Type.Array(text(), { maxItems: 100 });
@@ -295,7 +295,7 @@ export const Definition = Type.Object(
 );
 export type Definition = Static<typeof Definition>;
 export type Issue = { path: string; code: string; message: string };
-export type RecordSummary = {
+type RecordSummary = {
   id: string;
   title: string;
   kind: string;

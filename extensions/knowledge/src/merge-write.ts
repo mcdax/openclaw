@@ -22,7 +22,7 @@ const evidenceKey = (e: Pick<Evidence, "path" | "sha256" | "start_line" | "end_l
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Apply frontmatter changes, preserving authored YAML order, comments and unrelated keys. */
-export function rewriteRecord(
+function rewriteRecord(
   previous: LoadedRecord,
   set: Partial<Envelope>,
   remove: (keyof Envelope)[] = [],

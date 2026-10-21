@@ -145,7 +145,7 @@ export function memoryPrincipal(
  * operator or tool behind it. Only the plugin's own service code mints it
  * (Stores.openMaintenance); no feature, tool or provider path resolves to it,
  * and its writes are attributed to "maintenance", never an agent. */
-export const MAINTENANCE_AGENT = "knowledge-maintenance";
+const MAINTENANCE_AGENT = "knowledge-maintenance";
 export function maintenancePrincipal(scope: Partition): Principal {
   return { agentId: MAINTENANCE_AGENT, scope };
 }

@@ -148,7 +148,7 @@ export const RecordInput = Type.Object(
   { additionalProperties: false },
 );
 export type RecordInput = Static<typeof RecordInput>;
-export const InspectedEvidence = Type.Object({
+const InspectedEvidence = Type.Object({
   ...Evidence.properties,
   excerpt: text(20000),
   verified: Type.Boolean(),

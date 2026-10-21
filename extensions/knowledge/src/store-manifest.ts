@@ -1,6 +1,6 @@
 import { Type, type Static } from "typebox";
 
-export const uuid = Type.String({
+const uuid = Type.String({
   pattern: "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
 });
 /** Store identity file (`vault.json`). The store, not an agent, owns the vault:

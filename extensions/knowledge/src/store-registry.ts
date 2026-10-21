@@ -55,7 +55,7 @@ export type RegistrySnapshot = {
 export class RegistryRecoveryRequired extends Error {}
 
 /** Recommended registry and store layout under the Knowledge state root. */
-export const registryPaths = (stateRoot: string) => ({
+const registryPaths = (stateRoot: string) => ({
   registry: path.join(stateRoot, "registry.sqlite"),
   stores: path.join(stateRoot, "stores"),
   sentinel: path.join(stateRoot, "registry.id"),

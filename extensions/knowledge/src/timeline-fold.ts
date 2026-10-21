@@ -1,5 +1,5 @@
 /** Rendered notes keep this many Timeline entries open; older ones fold by month. */
-export const RECENT_TIMELINE_ENTRIES = 5;
+const RECENT_TIMELINE_ENTRIES = 5;
 
 // A leading bold date such as **2026-09-01** or **2026-09-01 09:00 PDT — Standup:**.
 const entryDate = (item: Element) =>

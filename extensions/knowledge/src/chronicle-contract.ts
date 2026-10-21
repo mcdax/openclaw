@@ -2,7 +2,7 @@ import { Type, type Static } from "typebox";
 import { text } from "./model.js";
 import { QueryFreshness } from "./query-freshness.js";
 
-export const TimeField = Type.Union([
+const TimeField = Type.Union([
   Type.Literal("occurred_at"),
   Type.Literal("recorded_at"),
   Type.Literal("updated_at"),
@@ -32,7 +32,7 @@ const paging = {
   limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
   snapshot: Type.Optional(text(64)),
 };
-export const Eligibility = Type.Union([Type.Literal("current"), Type.Literal("include_inactive")], {
+const Eligibility = Type.Union([Type.Literal("current"), Type.Literal("include_inactive")], {
   description:
     "Default current. include_inactive includes superseded/expired assertions, never withdrawn. Does not reconstruct past vault state.",
 });
@@ -77,7 +77,7 @@ export const LastSeenInput = Type.Object(
   { additionalProperties: false },
 );
 export type LastSeenInput = Static<typeof LastSeenInput>;
-export const TemporalReference = Type.Object({
+const TemporalReference = Type.Object({
   id: text(96),
   title: text(200),
   path: text(500),
@@ -89,7 +89,7 @@ export const TemporalReference = Type.Object({
   supersededBy: Type.Optional(text(96)),
   expiresAt: Type.Optional(text(40)),
 });
-export const ChronicleItem = Type.Object({
+const ChronicleItem = Type.Object({
   record: TemporalReference,
   date: text(40),
   dateField: TimeField,

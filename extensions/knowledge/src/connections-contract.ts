@@ -1,7 +1,7 @@
 import { Type } from "typebox";
 import { CardSummary, Summary } from "./inspection-contract.js";
 import { Evidence, text } from "./model.js";
-export const CompactSummary = Type.Object({
+const CompactSummary = Type.Object({
   ...Type.Pick(Summary, ["id", "title", "kind", "type", "identityStatus", "identityContext"])
     .properties,
   attributionConfidence: Type.Optional(
@@ -11,7 +11,7 @@ export const CompactSummary = Type.Object({
     }),
   ),
 });
-export const ConnectionRecord = Type.Union([CardSummary, CompactSummary]);
+const ConnectionRecord = Type.Union([CardSummary, CompactSummary]);
 export const ConnectionsInput = Type.Object(
   {
     id: text(96),

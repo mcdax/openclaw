@@ -33,7 +33,7 @@ import { temporalProblems } from "./temporal.js";
  * tree (e.g. a misplaced checkout), not ordinary growth. */
 export const MAX_ENTRIES = 100_000;
 export const digest = (s: string) => createHash("sha256").update(s).digest("hex");
-export function sameScope(a: unknown, b: Scope): boolean {
+function sameScope(a: unknown, b: Scope): boolean {
   if (!a || typeof a !== "object" || !Check(Envelope.properties.scope, a)) {
     return false;
   }

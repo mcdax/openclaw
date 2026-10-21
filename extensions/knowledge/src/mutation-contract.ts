@@ -73,7 +73,7 @@ const common = {
   valid_until: Envelope.properties.valid_until,
   expires_at: Envelope.properties.expires_at,
 };
-export const CreateClaim = Type.Object(
+const CreateClaim = Type.Object(
   {
     ...common,
     ...Type.Required(Type.Pick(Envelope, ["claim_kind", "assertion_origin"])).properties,
@@ -183,7 +183,7 @@ export const UnmergeInput = Type.Object(
   { additionalProperties: false },
 );
 export type UnmergeInput = Static<typeof UnmergeInput>;
-export const MergeReport = Type.Object(
+const MergeReport = Type.Object(
   {
     survivorId: id,
     absorbedId: id,
@@ -209,7 +209,7 @@ const recallTarget = {
   expectedRevision: Type.Integer({ minimum: 1 }),
   expectedHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
 };
-export const RecallSet = Type.Object(
+const RecallSet = Type.Object(
   {
     summary: Recall.properties.summary,
     triggers: Recall.properties.triggers,
@@ -252,7 +252,7 @@ export const CorrectInput = Type.Object(
   { additionalProperties: false },
 );
 export type CorrectInput = Static<typeof CorrectInput>;
-export const LifecycleImpact = Type.Object(
+const LifecycleImpact = Type.Object(
   {
     items: Type.Array(
       Type.Object(
@@ -268,7 +268,7 @@ export const LifecycleImpact = Type.Object(
 );
 export type WriteInput = SavePage | ClaimInput | RelationshipInput;
 export type WriteKind = "page" | "claim" | "relationship";
-export const GitCheckpoint = Type.Object(
+const GitCheckpoint = Type.Object(
   {
     state: Type.Union([
       Type.Literal("pending"),

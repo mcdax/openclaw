@@ -50,7 +50,7 @@ export type ActivityInput = Static<typeof SessionActivityInput>;
 export type ActivityOutput = Static<typeof SessionActivityOutput>;
 
 // Additive operational table: no vault Markdown changes and no old-schema downgrade.
-export function ensureActivity(db: DatabaseSync) {
+function ensureActivity(db: DatabaseSync) {
   db.exec(`CREATE TABLE IF NOT EXISTS session_activity (
     sequence INTEGER PRIMARY KEY, scope TEXT NOT NULL, agent_id TEXT NOT NULL,
     session_key TEXT NOT NULL, session_id TEXT NOT NULL, call_id TEXT NOT NULL,

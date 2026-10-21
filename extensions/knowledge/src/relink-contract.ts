@@ -2,7 +2,7 @@ import { Type, type Static } from "typebox";
 import { id, text } from "./model.js";
 
 /** Most unlinked claims one relink call examines. */
-export const RELINK_LIMIT_MAX = 500;
+const RELINK_LIMIT_MAX = 500;
 /** Examples reported per outcome. */
 export const RELINK_EXAMPLES_MAX = 10;
 

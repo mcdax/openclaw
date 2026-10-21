@@ -4,7 +4,7 @@ import type { contract } from "./contract.js";
 import type { loadVocabulary } from "./inspection-client.js";
 import { locationKey, type KnowledgeLocation } from "./page-location.js";
 
-export type StoresSnapshot = FeatureOutput<typeof contract, "stores_snapshot">;
+type StoresSnapshot = FeatureOutput<typeof contract, "stores_snapshot">;
 export type RecentCursor = { upperSequence: number; beforeSequence: number } | undefined;
 
 /** Mutable state of one mounted Knowledge page, shared by its view modules. */

@@ -1,7 +1,7 @@
 import type { Envelope, LoadedRecord } from "./model.js";
 
 /** Longest chain of merged pages followed before a redirect is treated as invalid. */
-export const MAX_MERGE_HOPS = 8;
+const MAX_MERGE_HOPS = 8;
 /** Namespaced aliases such as `discord:123` or `email:a@b.c` identify one entity across sources. */
 export const IDENTITY_KEY = /^[a-z][a-z0-9_-]*:\S+$/i;
 const normalize = (value: string) =>
@@ -72,17 +72,6 @@ export function mergeRedirects(records: readonly LoadedRecord[]): Map<string, st
   }
   redirectCache.set(records, redirects);
   return redirects;
-}
-
-/** Every ID that resolves to `id`, including `id` itself. */
-export function mergedIds(redirects: Map<string, string>, id: string): Set<string> {
-  const ids = new Set([id]);
-  for (const [from, to] of redirects) {
-    if (to === id) {
-      ids.add(from);
-    }
-  }
-  return ids;
 }
 
 /** Page and dependency references a record makes, as authored. */

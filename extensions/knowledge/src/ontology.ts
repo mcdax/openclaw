@@ -5,7 +5,7 @@ import { parseYaml, readText } from "./files.js";
 import { Definition, name, text, type Issue } from "./model.js";
 import { ontologyRoot } from "./plugin-files.js";
 
-export const Manifest = Type.Object(
+const Manifest = Type.Object(
   {
     format: Type.Literal("knowledge-ontology-v1"),
     name,
@@ -29,14 +29,14 @@ export const Manifest = Type.Object(
   },
   { additionalProperties: false },
 );
-export type Manifest = Static<typeof Manifest>;
+type Manifest = Static<typeof Manifest>;
 export type OntologySource = {
   path: string;
   raw: string;
   valid: boolean;
   manifest: Manifest | null;
 };
-export type EffectiveDefinition = {
+type EffectiveDefinition = {
   definition: Definition;
   source: string;
   ontology: string;
@@ -49,7 +49,6 @@ export type ResolvedOntology = {
   definitions: EffectiveDefinition[];
   chain: string[];
 };
-export const DEFAULT_NAME = "knowledge-default";
 
 export function parseOntology(path: string, raw: string, issues: Issue[]): OntologySource {
   try {

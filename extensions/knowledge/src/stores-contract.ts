@@ -41,7 +41,7 @@ export const StoreEntry = Type.Object(
 );
 export type StoreEntry = Static<typeof StoreEntry>;
 
-export const AgentEntry = Type.Object(
+const AgentEntry = Type.Object(
   {
     id: Type.String({ maxLength: 120 }),
     name: Type.String({ maxLength: 120 }),
@@ -52,7 +52,7 @@ export const AgentEntry = Type.Object(
   },
   { additionalProperties: false },
 );
-export type AgentEntry = Static<typeof AgentEntry>;
+type AgentEntry = Static<typeof AgentEntry>;
 
 export const StoresSnapshot = Type.Object(
   {
@@ -99,7 +99,7 @@ export const StoresChangeInput = Type.Object(
 export type StoresChangeInput = Static<typeof StoresChangeInput>;
 
 /** Typed outcomes; a rejected change never partially applies. */
-export const ChangeOutcome = Type.Union([
+const ChangeOutcome = Type.Union([
   Type.Literal("applied"),
   Type.Literal("not-applied"),
   Type.Literal("conflict"),
