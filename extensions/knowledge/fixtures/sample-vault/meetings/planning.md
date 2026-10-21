@@ -20,7 +20,6 @@ evidence:
     end_line: 4
     quote: We decided to begin with a small pilot garden.
 ---
-
 # Planning meeting
 
 Sample summary: the group chose a small pilot. The retained sample transcript is the evidence, not this summary.

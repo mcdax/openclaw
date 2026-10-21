@@ -20,5 +20,4 @@ evidence:
     end_line: 2
     quote: I will lead the Community Garden project.
 ---
-
 A directed, evidenced relationship; not inferred from co-mention.

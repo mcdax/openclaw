@@ -11,7 +11,6 @@ updated_at: 2026-09-22T12:00:00Z
 lifecycle: active
 type: company
 ---
-
 # Harbor Collective
 
 A fictional neighborhood organization.
