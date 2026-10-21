@@ -13,14 +13,22 @@ import {
   writeSync,
 } from "node:fs";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
+import {
+  executeSqliteQuerySync,
+  getNodeSqliteKysely,
+  openNodeSqliteDatabase,
+  runSqliteImmediateTransactionSync,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Check } from "typebox/value";
-import { SqliteIdentityStore } from "./identity-store.js";
+import { registerIdentity, SqliteIdentityStore } from "./identity-store.js";
+import { registrySchema, type RegistryTables } from "./registry-schema.js";
+import { ensureKnowledgeSchema, UnrecognizedSchema } from "./storage-schema.js";
 import { Manifest, checkpointKey } from "./store-manifest.js";
 import { canonicalJson } from "./stores-config.js";
 import type { StoreState } from "./stores-contract.js";
 
-const APPLICATION_ID = 0x4b4e5247; // KNRG; Knowledge store registry, never the host DB.
+const BUSY_TIMEOUT_MS = 5000;
 
 /** A provisioned (or reserved) physical store. Paths are registry-internal facts. */
 export type StoreRow = {
@@ -86,38 +94,17 @@ export class StoreRegistry {
         "Knowledge store registry is missing or empty while stores exist; restore registry.sqlite from backup.",
       );
     }
-    this.db = new DatabaseSync(registry);
-    this.db.exec("PRAGMA busy_timeout=5000; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;");
-    const version = Number(this.db.prepare("PRAGMA user_version").get()?.user_version);
-    if (version === 0) {
-      this.db.exec(`BEGIN IMMEDIATE;
-      PRAGMA application_id=${APPLICATION_ID};
-      CREATE TABLE stores (
-        vault_id TEXT PRIMARY KEY, publication_id TEXT NOT NULL, root TEXT NOT NULL UNIQUE,
-        state_path TEXT NOT NULL UNIQUE, state TEXT NOT NULL CHECK(state IN ('initializing','ready')), created_at TEXT NOT NULL
-      ) STRICT;
-      CREATE TABLE bindings (
-        binding TEXT PRIMARY KEY, vault_id TEXT NOT NULL UNIQUE REFERENCES stores(vault_id), label TEXT
-      ) STRICT;
-      CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT;
-      INSERT INTO meta VALUES ('registry_id', '${randomUUID()}');
-      CREATE TABLE operations (
-        request_id TEXT PRIMARY KEY, intent TEXT NOT NULL,
-        state TEXT NOT NULL CHECK(state IN ('pending','applied','not-applied','conflict')),
-        expected_revision TEXT NOT NULL, next_section TEXT NOT NULL, next_revision TEXT NOT NULL,
-        rebind TEXT, message TEXT NOT NULL, updated_at TEXT NOT NULL
-      ) STRICT;
-      PRAGMA user_version=1;
-      COMMIT;`);
-    }
-    if (
-      this.db.prepare("PRAGMA application_id").get()?.application_id !== APPLICATION_ID ||
-      Number(this.db.prepare("PRAGMA user_version").get()?.user_version) !== 1
-    ) {
+    this.db = openNodeSqliteDatabase(registry, { timeout: BUSY_TIMEOUT_MS });
+    try {
+      ensureKnowledgeSchema(this.db, registrySchema);
+    } catch (e) {
       this.db.close();
-      throw new RegistryRecoveryRequired(
-        "Knowledge store registry is not a recognized registry database; recovery review required.",
-      );
+      if (e instanceof UnrecognizedSchema) {
+        throw new RegistryRecoveryRequired(
+          "Knowledge store registry is not a recognized registry database; recovery review required.",
+        );
+      }
+      throw e;
     }
     const id = this.meta("registry_id")!;
     if (existsSync(sentinel) && readFileSync(sentinel, "utf8").trim() !== id) {
@@ -153,15 +140,7 @@ export class StoreRegistry {
   }
 
   private tx<T>(run: () => T): T {
-    this.db.exec("BEGIN IMMEDIATE");
-    try {
-      const result = run();
-      this.db.exec("COMMIT");
-      return result;
-    } catch (e) {
-      this.db.exec("ROLLBACK");
-      throw e;
-    }
+    return runSqliteImmediateTransactionSync(this.db, run);
   }
   private meta(key: string): string | null {
     return (
@@ -174,7 +153,13 @@ export class StoreRegistry {
     if (value === null) {
       this.db.prepare("DELETE FROM meta WHERE key=?").run(key);
     } else {
-      this.db.prepare("INSERT OR REPLACE INTO meta VALUES (?,?)").run(key, value);
+      executeSqliteQuerySync(
+        this.db,
+        getNodeSqliteKysely<RegistryTables>(this.db)
+          .insertInto("meta")
+          .values({ key, value })
+          .onConflict((oc) => oc.column("key").doUpdateSet({ value })),
+      );
     }
   }
   private store(vaultId: string): StoreRow | undefined {
@@ -279,12 +264,9 @@ export class StoreRegistry {
     fsyncDir(reserved.root);
     fsyncDir(path.dirname(reserved.root));
     const store = new SqliteIdentityStore(reserved.statePath);
-    store.withDatabase((db) => {
-      db.prepare("INSERT OR IGNORE INTO identities(agent_key, manifest) VALUES (?, ?)").run(
-        checkpointKey(reserved.vaultId),
-        JSON.stringify(manifest),
-      );
-    });
+    store.withDatabase((db) =>
+      registerIdentity(db, checkpointKey(reserved.vaultId), JSON.stringify(manifest)),
+    );
     // Verify the complete manifest/database pair before publishing readiness.
     const written: unknown = JSON.parse(
       readFileSync(path.join(reserved.root, "vault.json"), "utf8"),
@@ -357,12 +339,9 @@ export class StoreRegistry {
       throw new Error("Adopted store's identity checkpoint does not match its manifest.");
     }
     if (checkpoint === undefined) {
-      store.withDatabase((db) => {
-        db.prepare("INSERT OR IGNORE INTO identities(agent_key, manifest) VALUES (?, ?)").run(
-          checkpointKey(row.vaultId),
-          JSON.stringify(manifest),
-        );
-      });
+      store.withDatabase((db) =>
+        registerIdentity(db, checkpointKey(row.vaultId), JSON.stringify(manifest)),
+      );
     }
     this.tx(() => {
       this.db
