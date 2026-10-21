@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { runSqliteImmediateTransactionSync } from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Check } from "typebox/value";
 import { type ChronicleOutput, TimelineInput, DayInput } from "./chronicle-contract.js";
 import { reconcileChronicle, chronologicalIds } from "./chronicle-index.js";
@@ -93,18 +94,10 @@ export function chronicle(
     visible = new Set(byId.keys());
   const predicate = onDay ? dayPredicate(onDay) : undefined;
   const field = input.timeField ?? "occurred_at";
-  db.exec("BEGIN IMMEDIATE");
-  let snapshot: string, ids: string[];
-  try {
-    snapshot = reconcileChronicle(db, records, binding);
-    ids = chronologicalIds(db, binding, input);
-    db.exec("COMMIT");
-  } catch (error) {
-    if (db.isTransaction) {
-      db.exec("ROLLBACK");
-    }
-    throw error;
-  }
+  let { snapshot, ids } = runSqliteImmediateTransactionSync(db, () => ({
+    snapshot: reconcileChronicle(db, records, binding),
+    ids: chronologicalIds(db, binding, input),
+  }));
   // A cursor belongs to both a source snapshot and a particular query.
   snapshot = digest(
     JSON.stringify([

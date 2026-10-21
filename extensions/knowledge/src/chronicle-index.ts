@@ -1,5 +1,11 @@
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
+import {
+  getNodeSqliteKysely,
+  prepareSqliteQuerySync,
+  tableExists,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import type { LoadedRecord } from "./model.js";
+import type { StorageTables } from "./storage-tables.js";
 import {
   dateInterval,
   recordDate,
@@ -22,9 +28,7 @@ export function reconcileChronicle(
   binding: string,
 ): string {
   const tables = ["temporal_records_v1", "temporal_dates_v1", "temporal_entities_v1"];
-  const complete = tables.every((name) =>
-    db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name),
-  );
+  const complete = tables.every((name) => tableExists(db, name));
   db.exec(
     "CREATE TABLE IF NOT EXISTS temporal_records_v1 (binding TEXT NOT NULL,id TEXT NOT NULL,hash TEXT NOT NULL,PRIMARY KEY(binding,id)) STRICT;" +
       "CREATE TABLE IF NOT EXISTS temporal_dates_v1 (binding TEXT NOT NULL,id TEXT NOT NULL,field TEXT NOT NULL,value TEXT NOT NULL,start_ms INTEGER NOT NULL,end_ms INTEGER NOT NULL,PRIMARY KEY(binding,id,field)) STRICT;" +
@@ -54,7 +58,16 @@ export function reconcileChronicle(
   }
   const track = db.prepare("INSERT INTO temporal_records_v1 VALUES (?,?,?)");
   const date = db.prepare("INSERT INTO temporal_dates_v1 VALUES (?,?,?,?,?,?)");
-  const entity = db.prepare("INSERT OR IGNORE INTO temporal_entities_v1 VALUES (?,?,?)");
+  const entity = prepareSqliteQuerySync<StorageTables["temporal_entities_v1"]>(db, (param) =>
+    getNodeSqliteKysely<StorageTables>(db)
+      .insertInto("temporal_entities_v1")
+      .values({
+        binding: param((row) => row.binding),
+        id: param((row) => row.id),
+        entity: param((row) => row.entity),
+      })
+      .onConflict((oc) => oc.doNothing()),
+  );
   for (const record of wanted.values()) {
     track.run(binding, record.id, indexHash(record));
     for (const field of fields) {
@@ -67,7 +80,7 @@ export function reconcileChronicle(
     const m = record.metadata;
     for (const id of [record.id, ...(m.entities ?? []), m.owner, m.from, m.to, m.source_page]) {
       if (id) {
-        entity.run(binding, record.id, id);
+        entity({ binding, id: record.id, entity: id });
       }
     }
   }

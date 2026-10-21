@@ -1,6 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
+import {
+  getNodeSqliteKysely,
+  prepareSqliteQuerySync,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Type, type Static } from "typebox";
 import { text, type LoadedRecord } from "./model.js";
+import type { StorageTables } from "./storage-tables.js";
 
 /** Host provenance only; never accepted as tool input or used as authority. */
 export type ActivityOrigin = {
@@ -69,21 +74,28 @@ export function appendActivity(
   records: { id: string; revision: number }[],
 ) {
   ensureActivity(db);
-  const insert = db.prepare(`INSERT OR IGNORE INTO session_activity
-    (scope,agent_id,session_key,session_id,call_id,operation,action,at,record_id,revision) VALUES (?,?,?,?,?,?,?,?,?,?)`);
+  const fixed = {
+    scope,
+    agent_id: agent,
+    session_key: origin.sessionKey,
+    session_id: origin.sessionId,
+    call_id: origin.toolCallId,
+    operation: origin.operation,
+    action,
+    at: origin.at,
+  };
+  const insert = prepareSqliteQuerySync<{ id: string; revision: number }>(db, (param) =>
+    getNodeSqliteKysely<StorageTables>(db)
+      .insertInto("session_activity")
+      .values({
+        ...fixed,
+        record_id: param((r) => r.id),
+        revision: param((r) => r.revision),
+      })
+      .onConflict((oc) => oc.doNothing()),
+  );
   for (const r of records) {
-    insert.run(
-      scope,
-      agent,
-      origin.sessionKey,
-      origin.sessionId,
-      origin.toolCallId,
-      origin.operation,
-      action,
-      origin.at,
-      r.id,
-      r.revision,
-    );
+    insert(r);
   }
 }
 export function sessionActivity(

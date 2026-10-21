@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
+import {
+  executeSqliteQuerySync,
+  getNodeSqliteKysely,
+  prepareSqliteQuerySync,
+  runSqliteImmediateTransactionSync,
+  tableExists,
+} from "openclaw/plugin-sdk/sqlite-worker-runtime";
 import { Check } from "typebox/value";
 import { observeLifecycleGuards } from "./lifecycle.js";
 import { SEARCH_HIGHLIGHT_MAX_BYTES } from "./limits.js";
@@ -13,6 +20,7 @@ import {
   type SearchOutput,
   type LookupOutput,
 } from "./retrieval-contract.js";
+import type { StorageTables } from "./storage-tables.js";
 import { temporalPredicate } from "./temporal-query.js";
 import { activeNow } from "./temporal.js";
 import { digest, type SampleVault } from "./vault.js";
@@ -28,11 +36,16 @@ export function observeWithdrawals(db: DatabaseSync, records: LoadedRecord[], bi
   db.exec(
     "CREATE TABLE IF NOT EXISTS keyword_withdrawals_v1 (binding TEXT NOT NULL, id TEXT NOT NULL, PRIMARY KEY(binding,id)) STRICT",
   );
-  const insert = db.prepare("INSERT OR IGNORE INTO keyword_withdrawals_v1 VALUES (?,?)");
+  const insert = prepareSqliteQuerySync<{ id: string }>(db, (param) =>
+    getNodeSqliteKysely<StorageTables>(db)
+      .insertInto("keyword_withdrawals_v1")
+      .values({ binding, id: param((r) => r.id) })
+      .onConflict((oc) => oc.doNothing()),
+  );
   // A duplicate/invalid record cannot safely clear an existing withdrawal either.
   for (const r of records) {
     if (r.lifecycle === "withdrawn") {
-      insert.run(binding, r.id);
+      insert(r);
     }
   }
 }
@@ -261,7 +274,7 @@ function reconcileKeywordIndex(
   db.exec(
     "CREATE TABLE IF NOT EXISTS keyword_state_v1 (binding TEXT PRIMARY KEY, snapshot TEXT NOT NULL, indexed_at TEXT NOT NULL) STRICT",
   );
-  const tracked = db.prepare("SELECT 1 FROM sqlite_master WHERE name=?").get(rows);
+  const tracked = tableExists(db, rows);
   db.exec(
     `CREATE VIRTUAL TABLE IF NOT EXISTS ${table} USING fts5(id UNINDEXED, title, aliases, body, tokenize='unicode61 remove_diacritics 2')`,
   );
@@ -299,10 +312,13 @@ function reconcileKeywordIndex(
       );
     }
     indexedAt = new Date().toISOString();
-    db.prepare("INSERT OR REPLACE INTO keyword_state_v1 VALUES (?,?,?)").run(
-      binding,
-      snapshot,
-      indexedAt,
+    const indexed = { snapshot, indexed_at: indexedAt };
+    executeSqliteQuerySync(
+      db,
+      getNodeSqliteKysely<StorageTables>(db)
+        .insertInto("keyword_state_v1")
+        .values({ binding, ...indexed })
+        .onConflict((oc) => oc.column("binding").doUpdateSet(indexed)),
     );
   }
   return { table, snapshot, indexedAt };
@@ -317,26 +333,22 @@ export function verifyKeywordIndex(
   withdrawn = new Set<string>(),
 ): Set<string> | null {
   try {
-    db.exec("BEGIN IMMEDIATE");
-    const { table } = reconcileKeywordIndex(
-      db,
-      data,
-      eligible(data, withdrawn, false),
-      binding,
-      generation,
-    );
-    const ids = new Set(
-      db
-        .prepare(`SELECT id FROM ${table}`)
-        .all()
-        .map((r) => String(r.id)),
-    );
-    db.exec("COMMIT");
-    return ids;
+    return runSqliteImmediateTransactionSync(db, () => {
+      const { table } = reconcileKeywordIndex(
+        db,
+        data,
+        eligible(data, withdrawn, false),
+        binding,
+        generation,
+      );
+      return new Set(
+        db
+          .prepare(`SELECT id FROM ${table}`)
+          .all()
+          .map((r) => String(r.id)),
+      );
+    });
   } catch {
-    if (db.isTransaction) {
-      db.exec("ROLLBACK");
-    }
     return null;
   }
 }
@@ -367,102 +379,103 @@ export function keywordSearch(
     ),
     selected = filtered(data, records, input);
   try {
-    db.exec("BEGIN IMMEDIATE");
-    const { table, snapshot, indexedAt } = reconcileKeywordIndex(
-      db,
-      data,
-      records,
-      binding,
-      generation,
-    );
-    // BM25 statistics must come only from the searched corpus. The scope table
-    // holds exactly the eligible records, so an unfiltered search queries it
-    // directly; a filtered search ranks within a copy of just its subset.
-    const corpus = selected.length === records.length ? table : "keyword_query_v1";
-    if (corpus !== table) {
-      db.exec("DROP TABLE IF EXISTS temp.keyword_query_v1");
-      db.exec(
-        "CREATE VIRTUAL TABLE temp.keyword_query_v1 USING fts5(id UNINDEXED, title, aliases, body, tokenize='unicode61 remove_diacritics 2')",
+    return runSqliteImmediateTransactionSync(db, (): SearchOutput => {
+      const { table, snapshot, indexedAt } = reconcileKeywordIndex(
+        db,
+        data,
+        records,
+        binding,
+        generation,
       );
-      const insertQuery = db.prepare(
-        `INSERT INTO temp.keyword_query_v1 SELECT id,title,aliases,body FROM ${table} WHERE id=?`,
-      );
-      for (const r of selected) {
-        insertQuery.run(r.id);
+      // BM25 statistics must come only from the searched corpus. The scope table
+      // holds exactly the eligible records, so an unfiltered search queries it
+      // directly; a filtered search ranks within a copy of just its subset.
+      const corpus = selected.length === records.length ? table : "keyword_query_v1";
+      if (corpus !== table) {
+        db.exec("DROP TABLE IF EXISTS temp.keyword_query_v1");
+        db.exec(
+          "CREATE VIRTUAL TABLE temp.keyword_query_v1 USING fts5(id UNINDEXED, title, aliases, body, tokenize='unicode61 remove_diacritics 2')",
+        );
+        const insertQuery = db.prepare(
+          `INSERT INTO temp.keyword_query_v1 SELECT id,title,aliases,body FROM ${table} WHERE id=?`,
+        );
+        for (const r of selected) {
+          insertQuery.run(r.id);
+        }
       }
-    }
-    // Unpredictable delimiters checked against the corpus prevent authored marker injection.
-    let marker: string;
-    do {
-      marker = randomUUID();
-    } while (
-      selected.some((r) =>
-        [r.title, r.body, ...(r.metadata.aliases ?? [])].some((v) => v.includes(marker)),
-      )
-    );
-    const total = Number(
-      db.prepare(`SELECT count(*) AS n FROM ${corpus} WHERE ${corpus} MATCH ?`).get(expression)!.n,
-    );
-    const rows = db
-      .prepare(`SELECT id,bm25(${corpus},0,8,6,1) AS score,
+      // Unpredictable delimiters checked against the corpus prevent authored marker injection.
+      let marker: string;
+      do {
+        marker = randomUUID();
+      } while (
+        selected.some((r) =>
+          [r.title, r.body, ...(r.metadata.aliases ?? [])].some((v) => v.includes(marker)),
+        )
+      );
+      const total = Number(
+        db.prepare(`SELECT count(*) AS n FROM ${corpus} WHERE ${corpus} MATCH ?`).get(expression)!
+          .n,
+      );
+      const rows = db
+        .prepare(`SELECT id,bm25(${corpus},0,8,6,1) AS score,
       CASE WHEN length(CAST(body AS BLOB))<=${SEARCH_HIGHLIGHT_MAX_BYTES} THEN highlight(${corpus},1,?,'') END AS title,
       CASE WHEN length(CAST(body AS BLOB))<=${SEARCH_HIGHLIGHT_MAX_BYTES} THEN highlight(${corpus},2,?,'') END AS aliases,
       CASE WHEN length(CAST(body AS BLOB))<=${SEARCH_HIGHLIGHT_MAX_BYTES} THEN highlight(${corpus},3,?,'') END AS body
       FROM ${corpus} WHERE ${corpus} MATCH ? ORDER BY score,id LIMIT ? OFFSET ?`)
-      .all(marker, marker, marker, expression, limit, offset);
-    const byId = new Map(selected.map((r) => [r.id, r]));
-    // FTS5 highlight/snippet enumeration becomes quadratic with many repeated
-    // instances. Full-record matching and BM25 stay authoritative; large bodies
-    // use an explicitly labelled opening excerpt, not an approximate token match.
-    const fieldExpression = keywordExpression({
-      ...input,
-      mode: input.mode === "phrase" ? "phrase" : "any",
-    });
-    const columnMatch = db.prepare(
-      `SELECT 1 FROM ${corpus} WHERE id=? AND ${corpus} MATCH ? LIMIT 1`,
-    );
-    const hits = rows.map((row) => {
-      if (row.body === null) {
+        .all(marker, marker, marker, expression, limit, offset);
+      const byId = new Map(selected.map((r) => [r.id, r]));
+      // FTS5 highlight/snippet enumeration becomes quadratic with many repeated
+      // instances. Full-record matching and BM25 stay authoritative; large bodies
+      // use an explicitly labelled opening excerpt, not an approximate token match.
+      const fieldExpression = keywordExpression({
+        ...input,
+        mode: input.mode === "phrase" ? "phrase" : "any",
+      });
+      const columnMatch = db.prepare(
+        `SELECT 1 FROM ${corpus} WHERE id=? AND ${corpus} MATCH ? LIMIT 1`,
+      );
+      const hits = rows.map((row) => {
+        if (row.body === null) {
+          const fields = (["title", "aliases", "body"] as const).filter((field) =>
+            columnMatch.get(row.id!, `${field} : (${fieldExpression})`),
+          );
+          const field = fields.includes("body") ? "body" : (fields[0] ?? "title");
+          const result = hit(byId.get(String(row.id))!, field, 0, fields, -Number(row.score));
+          result.snippet.matchLocated = false;
+          return result;
+        }
         const fields = (["title", "aliases", "body"] as const).filter((field) =>
-          columnMatch.get(row.id!, `${field} : (${fieldExpression})`),
+          String(row[field]).includes(marker),
         );
         const field = fields.includes("body") ? "body" : (fields[0] ?? "title");
-        const result = hit(byId.get(String(row.id))!, field, 0, fields, -Number(row.score));
-        result.snippet.matchLocated = false;
-        return result;
+        return hit(
+          byId.get(String(row.id))!,
+          field,
+          Math.max(0, String(row[field]).indexOf(marker)),
+          fields,
+          -Number(row.score),
+        );
+      });
+      if (corpus !== table) {
+        db.exec("DROP TABLE temp.keyword_query_v1");
       }
-      const fields = (["title", "aliases", "body"] as const).filter((field) =>
-        String(row[field]).includes(marker),
-      );
-      const field = fields.includes("body") ? "body" : (fields[0] ?? "title");
-      return hit(
-        byId.get(String(row.id))!,
-        field,
-        Math.max(0, String(row[field]).indexOf(marker)),
-        fields,
-        -Number(row.score),
-      );
+      return {
+        ...base,
+        freshness: queryFreshness(data.checkedAt, indexedAt),
+        hits,
+        resultCount: hits.length,
+        total,
+        nextOffset: offset + limit < total ? offset + limit : null,
+        index: {
+          state: "ready",
+          lag: false,
+          snapshot,
+          message:
+            "Indexed from the current reconciled scope. Higher BM25 scores rank first; compare scores only within this query and snapshot.",
+        },
+      };
     });
-    db.exec(corpus === table ? "COMMIT" : "DROP TABLE temp.keyword_query_v1; COMMIT");
-    return {
-      ...base,
-      freshness: queryFreshness(data.checkedAt, indexedAt),
-      hits,
-      resultCount: hits.length,
-      total,
-      nextOffset: offset + limit < total ? offset + limit : null,
-      index: {
-        state: "ready",
-        lag: false,
-        snapshot,
-        message:
-          "Indexed from the current reconciled scope. Higher BM25 scores rank first; compare scores only within this query and snapshot.",
-      },
-    };
   } catch {
-    if (db.isTransaction) {
-      db.exec("ROLLBACK");
-    }
     return {
       ...base,
       hits: [],
