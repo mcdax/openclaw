@@ -1,4 +1,5 @@
 import { Worker } from "node:worker_threads";
+import { pluginFilesLocation, workerUrl } from "./plugin-files.js";
 import type { RegistryOperations, RegistryRequest, RegistryResponse } from "./registry-host.js";
 import { sdkUrls } from "./storage-client.js";
 import type { RegistrySnapshot } from "./store-registry.js";
@@ -60,8 +61,8 @@ export class RegistryClient {
     if (this.worker) {
       return this.worker;
     }
-    const worker = new Worker(new URL("./registry-worker.js", import.meta.url), {
-      workerData: { sdk: sdkUrls(), stateRoot: this.stateRoot() },
+    const worker = new Worker(workerUrl("registry"), {
+      workerData: { sdk: sdkUrls(), files: pluginFilesLocation(), stateRoot: this.stateRoot() },
     });
     worker.unref();
     worker.on("message", (message: RegistryResponse) => {

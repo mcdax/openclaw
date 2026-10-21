@@ -15,10 +15,10 @@ import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { SqliteIdentityStore } from "./identity-store.js";
+import { sampleVaultRoot } from "./plugin-files.js";
 import { RealVault } from "./real-vault.js";
 import { createKnowledgeService } from "./service.js";
 import { accessFor, apiFor, useTestTempDirs } from "./test-support.js";
-import { SAMPLE_ROOT } from "./vault.js";
 
 const tempDirs = useTestTempDirs();
 
@@ -45,7 +45,7 @@ async function fixture() {
   async function partition(relative: any, scope: any, title: any) {
     const target = path.join(root, relative);
     await mkdir(target, { recursive: true });
-    await cp(SAMPLE_ROOT, target, { recursive: true });
+    await cp(sampleVaultRoot(), target, { recursive: true });
     const { readdir } = await import("node:fs/promises");
     for (const file of await readdir(target, { recursive: true })) {
       if (file.endsWith(".md")) {

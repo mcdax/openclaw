@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { Type, type Static } from "typebox";
 import { Check, Errors } from "typebox/value";
 import { parseYaml, readText } from "./files.js";
 import { Definition, name, text, type Issue } from "./model.js";
+import { ontologyRoot } from "./plugin-files.js";
 
 export const Manifest = Type.Object(
   {
@@ -50,7 +50,6 @@ export type ResolvedOntology = {
   chain: string[];
 };
 export const DEFAULT_NAME = "knowledge-default";
-const DEFAULT_ROOT = fileURLToPath(new URL("../ontologies/", import.meta.url));
 
 export function parseOntology(path: string, raw: string, issues: Issue[]): OntologySource {
   try {
@@ -115,7 +114,7 @@ export function parseOntology(path: string, raw: string, issues: Issue[]): Ontol
 export async function bundledOntology(issues: Issue[]) {
   const source = "bundled:knowledge-default.yaml";
   try {
-    return parseOntology(source, await readText(DEFAULT_ROOT, "knowledge-default.yaml"), issues);
+    return parseOntology(source, await readText(ontologyRoot(), "knowledge-default.yaml"), issues);
   } catch {
     issues.push({
       path: source,

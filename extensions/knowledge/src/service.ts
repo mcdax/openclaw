@@ -20,6 +20,7 @@ import { Maintenance } from "./maintenance.js";
 import { buildKnowledgeMemoryFlushPlan } from "./memory-flush.js";
 import { buildKnowledgeMemoryPrompt } from "./memory-prompt.js";
 import { createKnowledgeMemoryRuntime } from "./memory-provider.js";
+import { locatePluginFiles } from "./plugin-files.js";
 import { queryFreshness } from "./query-freshness.js";
 import type { StorageOperations } from "./storage-host.js";
 import { createStoreOperations } from "./store-assignments.js";
@@ -79,6 +80,10 @@ export function createKnowledgeService(
   api: OpenClawPluginApi,
   events?: FeatureEventEmitter<typeof contract>,
 ): Handlers {
+  if (!api.runtimeSource) {
+    throw new Error("Knowledge requires an OpenClaw host with runtime entrypoint metadata");
+  }
+  locatePluginFiles(api.runtimeSource);
   const instanceId = randomUUID(),
     startedAt = new Date().toISOString();
   const policy = parsePolicy(api.pluginConfig);

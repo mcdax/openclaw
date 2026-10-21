@@ -1500,6 +1500,9 @@ importers:
 
   extensions/knowledge:
     dependencies:
+      '@openclaw/fs-safe':
+        specifier: 0.26.8
+        version: 0.26.8
       dompurify:
         specifier: 3.4.17
         version: 3.4.17

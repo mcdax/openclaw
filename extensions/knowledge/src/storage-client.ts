@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
 import type { VaultAccess } from "./access.js";
+import { pluginFilesLocation, workerUrl } from "./plugin-files.js";
 import type { StoreConfig } from "./real-vault.js";
 import type { StorageOperations } from "./storage-host.js";
 import { AUTHORITY_REVOKED, type HostMessage, type WorkerMessage } from "./storage-protocol.js";
@@ -16,11 +17,7 @@ type Call = {
 };
 
 // SDK modules reachable from storage code in the worker.
-const SDK_MODULES = [
-  "openclaw/plugin-sdk/memory-core-host-engine-foundation",
-  "openclaw/plugin-sdk/feature-contract",
-  "openclaw/plugin-sdk/routing",
-];
+const SDK_MODULES = ["openclaw/plugin-sdk/feature-contract", "openclaw/plugin-sdk/routing"];
 // Resolve through whatever resolver the host installed for this plugin module.
 export function sdkUrls(): Record<string, string> {
   const urls: Record<string, string> = {},
@@ -87,8 +84,13 @@ export class StorageClient {
     if (this.worker) {
       return this.worker;
     }
-    const worker = new Worker(new URL("./storage-worker.js", import.meta.url), {
-      workerData: { sdk: sdkUrls(), config: this.config, signal: this.signal.buffer },
+    const worker = new Worker(workerUrl("storage"), {
+      workerData: {
+        sdk: sdkUrls(),
+        files: pluginFilesLocation(),
+        config: this.config,
+        signal: this.signal.buffer,
+      },
     });
     worker.unref();
     worker.on("message", (message: WorkerMessage) => this.receive(message, worker));

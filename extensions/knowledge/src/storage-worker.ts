@@ -2,9 +2,11 @@
 // here so it never blocks the Gateway's main thread.
 import { registerHooks } from "node:module";
 import { parentPort, workerData } from "node:worker_threads";
+import { usePluginFilesLocation, type PluginFilesLocation } from "./plugin-files.js";
 
 const data = workerData as {
   sdk: Record<string, string>;
+  files: PluginFilesLocation;
   config: import("./real-vault.js").StoreConfig;
   signal: SharedArrayBuffer;
 };
@@ -16,5 +18,6 @@ registerHooks({
     return url ? { url, shortCircuit: true } : next(specifier, context);
   },
 });
+usePluginFilesLocation(data.files);
 const { serve } = await import("./storage-host.js");
 serve(parentPort!, data);

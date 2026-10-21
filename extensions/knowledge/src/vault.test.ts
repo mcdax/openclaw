@@ -4,13 +4,14 @@ import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { inspectRecord, inspectOntology } from "./inspection.js";
+import { sampleVaultRoot } from "./plugin-files.js";
 import { useTestTempDirs } from "./test-support.js";
-import { SampleVault, SAMPLE_ROOT, digest } from "./vault.js";
+import { SampleVault, digest } from "./vault.js";
 
 const tempDirs = useTestTempDirs();
 async function fixture() {
   const root = tempDirs.make("knowledge-test-");
-  await cp(SAMPLE_ROOT, root, { recursive: true });
+  await cp(sampleVaultRoot(), root, { recursive: true });
   await mkdir(path.join(root, "notes"), { recursive: true });
 
   return { root, vault: new SampleVault(root) };
@@ -26,7 +27,7 @@ async function hashes(root: any) {
   return found;
 }
 it("representative vault: records, ontology, diagnostics, citations, and zero writes", async () => {
-  const before = await hashes(SAMPLE_ROOT),
+  const before = await hashes(sampleVaultRoot()),
     vault = new SampleVault(),
     data = await vault.scan();
   expect(data.records.length).toBe(7);
@@ -44,7 +45,7 @@ it("representative vault: records, ontology, diagnostics, citations, and zero wr
       await inspectRecord(vault, { id: "sample_claim_pilot" }),
     ),
   ).toBe(true);
-  expect(await hashes(SAMPLE_ROOT)).toStrictEqual(before);
+  expect(await hashes(sampleVaultRoot())).toStrictEqual(before);
 });
 it("bounded listing supports exhaustive pagination, aliases and kind filters", async () => {
   const vault = new SampleVault();

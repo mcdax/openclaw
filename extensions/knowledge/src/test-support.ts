@@ -4,6 +4,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { useAutoCleanupTempDirTracker } from "openclaw/plugin-sdk/test-env";
 import { afterEach } from "vitest";
@@ -138,6 +139,7 @@ export function hostApi(
   const writes: HostConfig[] = [];
   const api = {
     id: "knowledge",
+    runtimeSource: fileURLToPath(new URL("../index.ts", import.meta.url)),
     pluginConfig: { ...policy },
     registerService: stopAtTestEnd,
     runtime: {

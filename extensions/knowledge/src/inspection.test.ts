@@ -5,8 +5,9 @@ import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { loadVocabulary } from "./inspection-client.js";
 import { inspectRecord, inspectOntology, RECORD_RESPONSE_BYTES } from "./inspection.js";
+import { sampleVaultRoot } from "./plugin-files.js";
 import { useTestTempDirs, jsonRoundTrip } from "./test-support.js";
-import { SampleVault, SAMPLE_ROOT } from "./vault.js";
+import { SampleVault } from "./vault.js";
 
 const tempDirs = useTestTempDirs();
 
@@ -20,7 +21,7 @@ const checked = (operation: any, result: any) => {
 async function fixture() {
   const root = tempDirs.make("knowledge-inspection-");
 
-  await cp(SAMPLE_ROOT, root, { recursive: true });
+  await cp(sampleVaultRoot(), root, { recursive: true });
   return { root, vault: new SampleVault(root) };
 }
 

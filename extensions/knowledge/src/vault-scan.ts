@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { Check } from "typebox/value";
 import { annotationEvidence, annotationProblems } from "./annotations.js";
 import {
@@ -22,6 +21,7 @@ import {
   inferType,
   type OntologySource,
 } from "./ontology.js";
+import { sampleVaultRoot } from "./plugin-files.js";
 import { eligible } from "./retrieval.js";
 import {
   hydrateMetadata,
@@ -29,7 +29,6 @@ import {
   sourceDescriptorStamper,
 } from "./source-records.js";
 import { temporalProblems } from "./temporal.js";
-export const SAMPLE_ROOT = fileURLToPath(new URL("../fixtures/sample-vault/", import.meta.url));
 /** Runaway guard, not a size budget: a partition this large is a pathological
  * tree (e.g. a misplaced checkout), not ordinary growth. */
 export const MAX_ENTRIES = 100_000;
@@ -78,7 +77,7 @@ export type Overlay = {
 /** Scans one vault root into a validated catalog, reusing the owner's scan cache while files are unchanged. */
 export class VaultScanner {
   constructor(
-    protected readonly root = SAMPLE_ROOT,
+    protected readonly root = sampleVaultRoot(),
     private readonly scope: Scope = { visibility: "sample" },
     private readonly empty = false,
     private readonly observe?: (

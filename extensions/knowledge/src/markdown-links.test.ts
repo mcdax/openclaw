@@ -125,10 +125,11 @@ it("descriptive filenames are safe, Unicode-aware and collision preserving", () 
 
 it("real scans expose scoped link resolutions and diagnostics without invalidating authored pages; renames rebuild navigation", async () => {
   const { cp, readFile, writeFile, rename } = await import("node:fs/promises");
-  const { SampleVault, SAMPLE_ROOT } = await import("./vault.js");
+  const { SampleVault } = await import("./vault.js");
+  const { sampleVaultRoot } = await import("./plugin-files.js");
   const { inspectRecord } = await import("./inspection.js");
   const root = tempDirs.make("knowledge-links-");
-  await cp(SAMPLE_ROOT, root, { recursive: true });
+  await cp(sampleVaultRoot(), root, { recursive: true });
   const file = root + "/people/alex-rivera.md";
   const before = await readFile(file, "utf8");
   await writeFile(file, before + "\n[[Missing page]] [self](alex-rivera.md)\n");

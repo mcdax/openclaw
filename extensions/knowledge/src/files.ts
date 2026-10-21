@@ -1,4 +1,4 @@
-import { root } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { root } from "@openclaw/fs-safe/root";
 import { parseDocument } from "yaml";
 import { AUXILIARY_MAX_BYTES } from "./limits.js";
 export const safeRoot = (rootPath: string, maxBytes = AUXILIARY_MAX_BYTES) =>
@@ -6,7 +6,6 @@ export const safeRoot = (rootPath: string, maxBytes = AUXILIARY_MAX_BYTES) =>
     maxBytes,
     symlinks: "reject",
     hardlinks: "reject",
-    nonBlockingRead: true,
   });
 export async function readText(
   rootPath: string,
