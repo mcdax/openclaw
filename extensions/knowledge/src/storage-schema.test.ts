@@ -8,9 +8,12 @@ import { useTestTempDirs } from "./test-support.js";
 
 const tempDirs = useTestTempDirs();
 
+// Native header application IDs earlier Knowledge releases stamped.
+const STATE_APPLICATION_ID = 0x4b4e4f57;
+const REGISTRY_APPLICATION_ID = 0x4b4e5247;
 // Schema steps exactly as earlier Knowledge releases wrote them, header fields included.
 const LEGACY_STATE_STEPS = [
-  `PRAGMA application_id=${0x4b4e4f57}; PRAGMA user_version=1;
+  `PRAGMA application_id=${STATE_APPLICATION_ID}; PRAGMA user_version=1;
    CREATE TABLE identities (agent_key TEXT PRIMARY KEY, manifest TEXT NOT NULL) STRICT;`,
   `CREATE TABLE IF NOT EXISTS mutations (scope TEXT NOT NULL, request TEXT NOT NULL, intent TEXT NOT NULL,
      state TEXT NOT NULL, plan TEXT NOT NULL, receipt TEXT NOT NULL, PRIMARY KEY(scope, request)) STRICT;
@@ -134,7 +137,7 @@ it("a registry written by an earlier release opens, and a foreign database is re
   const root = tempDirs.make("knowledge-registry-");
   const legacy = new DatabaseSync(path.join(root, "registry.sqlite"));
   legacy.exec(`BEGIN IMMEDIATE;
-    PRAGMA application_id=${0x4b4e5247};
+    PRAGMA application_id=${REGISTRY_APPLICATION_ID};
     CREATE TABLE stores (vault_id TEXT PRIMARY KEY, publication_id TEXT NOT NULL, root TEXT NOT NULL UNIQUE,
       state_path TEXT NOT NULL UNIQUE, state TEXT NOT NULL CHECK(state IN ('initializing','ready')), created_at TEXT NOT NULL) STRICT;
     CREATE TABLE bindings (binding TEXT PRIMARY KEY, vault_id TEXT NOT NULL UNIQUE REFERENCES stores(vault_id), label TEXT) STRICT;

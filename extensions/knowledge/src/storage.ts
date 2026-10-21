@@ -14,7 +14,8 @@ import { connections } from "./connections.js";
 import { EvidenceReadInput } from "./evidence-read-contract.js";
 import { VerifyInput, type VerifyOutput } from "./ingestion-contract.js";
 import { approvedRecall } from "./model.js";
-import { recentActivity, type RecentInput } from "./recent.js";
+import { recentActivity } from "./recent-activity.js";
+import type { RecentInput } from "./recent.js";
 import { withinBudget } from "./response-budget.js";
 import type { SearchInput, LookupInput } from "./retrieval-contract.js";
 import {

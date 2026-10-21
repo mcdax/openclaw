@@ -3483,7 +3483,7 @@ const workerModules = new Set([
   "extensions/memory-core/src/memory/manager-vector-rebuild-state.ts", // Retrieval, source-index and database-publication kernels run in the search/publication workers; the host consumes published vector facts.
 
   "extensions/knowledge/src/identity-store.ts", // Only StorageBase (storage-worker.ts via storage-host.ts) and StoreRegistry (registry-worker.ts via registry-host.ts) open this store.
-  "extensions/knowledge/src/recent.ts", // recentActivity runs only in KnowledgeStorage inside storage-worker.ts; contract.ts imports only its schemas.
+  "extensions/knowledge/src/recent-activity.ts", // recentActivity runs only in KnowledgeStorage inside storage-worker.ts.
   "extensions/knowledge/src/registry-schema.ts", // Only StoreRegistry, constructed by registry-host.ts in registry-worker.ts, admits this schema.
   "extensions/knowledge/src/retrieval.ts", // Index SQL runs only in KnowledgeStorage inside storage-worker.ts; other imports use the pure eligible/exactLookup helpers.
   "extensions/knowledge/src/storage-base.ts", // Base of KnowledgeStorage, constructed only by storage-host.ts in storage-worker.ts.

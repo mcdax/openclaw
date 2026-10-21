@@ -2,7 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { hostJsonBoundary } from "./host-json-test-support.js";
-import { recentActivity, RecentOutput } from "./recent.js";
+import { recentActivity } from "./recent-activity.js";
+import { RecentOutput } from "./recent.js";
 import { afterTest, jsonRoundTrip } from "./test-support.js";
 // Exercise the host's actual boundary through the SDK, not a copy of our budget helper.
 const isHostJson = hostJsonBoundary();

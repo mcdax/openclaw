@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
-import { recentActivity } from "./recent.js";
+import { recentActivity } from "./recent-activity.js";
 import { afterTest } from "./test-support.js";
 
 // Recent reads a projection of published plans. It must follow publications
