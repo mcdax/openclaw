@@ -73,7 +73,9 @@ export function parseOntology(path: string, raw: string, issues: Issue[]): Ontol
       }
       for (const f of d.fields) {
         if (f.values && (f.type !== "string" || !f.values.length)) {
-          throw Error(`Field ${d.name}.${f.name}: values requires a nonempty string enumeration`);
+          throw new Error(
+            `Field ${d.name}.${f.name}: values requires a nonempty string enumeration`,
+          );
         }
       }
       if (d.kind === "page") {
@@ -140,8 +142,9 @@ function merge(layersHighToLow: EffectiveDefinition[][]): EffectiveDefinition[] 
   const chosen = new Map<string, EffectiveDefinition>();
   for (const layer of layersHighToLow) {
     for (const d of layer) {
-      if (!base.has(d.definition.name) && !chosen.has(d.definition.name))
+      if (!base.has(d.definition.name) && !chosen.has(d.definition.name)) {
         chosen.set(d.definition.name, d);
+      }
     }
   }
   return [...chosen.values(), ...base.values()];
@@ -172,14 +175,14 @@ export function resolveOntology(
       byName.set(s.manifest.name, [...(byName.get(s.manifest.name) ?? []), s]);
     }
   }
-  for (const [name, matches] of byName) {
+  for (const [ontologyName, matches] of byName) {
     if (matches.length > 1) {
       for (const s of matches) {
         s.valid = false;
         issues.push({
           path: s.path,
           code: "duplicate-ontology",
-          message: `Ontology name ${name} is ambiguous; none activated.`,
+          message: `Ontology name ${ontologyName} is ambiguous; none activated.`,
         });
       }
     }
@@ -188,12 +191,12 @@ export function resolveOntology(
     if (!root?.valid || !root.manifest) {
       throw new Error("Active ontology is invalid or unavailable; no fallback activated.");
     }
-    const get = (name: string) => {
-      const matches = byName.get(name);
-      if (matches?.length !== 1 || !matches[0].valid) {
-        throw new Error(`Missing, invalid, or ambiguous ontology: ${name}`);
+    const get = (ontologyName: string) => {
+      const matches = byName.get(ontologyName);
+      if (matches?.length !== 1 || !matches[0]!.valid) {
+        throw new Error(`Missing, invalid, or ambiguous ontology: ${ontologyName}`);
       }
-      return matches[0];
+      return matches[0]!;
     };
     const own = (s: OntologySource) =>
       s.manifest!.definitions.map((definition) => ({
@@ -222,12 +225,14 @@ export function resolveOntology(
         ["page", borrow.types ?? []],
         ["relationship", borrow.relationships ?? []],
       ] as const) {
-        for (const name of names) {
+        for (const borrowedName of names) {
           const found = own(donor).find(
-            (d) => d.definition.kind === kind && d.definition.name === name,
+            (d) => d.definition.kind === kind && d.definition.name === borrowedName,
           );
           if (!found) {
-            throw new Error(`Borrowed ${kind} ${name} is not declared by ${borrow.ontology}`);
+            throw new Error(
+              `Borrowed ${kind} ${borrowedName} is not declared by ${borrow.ontology}`,
+            );
           }
           borrowed.push(found);
         }
@@ -240,7 +245,7 @@ export function resolveOntology(
       for (const d of layer) {
         const previous = kinds.get(d.definition.name);
         if (previous && previous !== d.definition.kind) {
-          throw Error(`Definition ${d.definition.name} changes record kind`);
+          throw new Error(`Definition ${d.definition.name} changes record kind`);
         }
         kinds.set(d.definition.name, d.definition.kind);
       }
@@ -252,8 +257,9 @@ export function resolveOntology(
     const relationships = new Map<string, EffectiveDefinition>();
     for (const layer of layers) {
       for (const d of layer) {
-        if (d.definition.kind === "relationship" && !relationships.has(d.definition.name))
+        if (d.definition.kind === "relationship" && !relationships.has(d.definition.name)) {
           relationships.set(d.definition.name, d);
+        }
       }
     }
     const definitions = [...pages, ...relationships.values()];
@@ -264,7 +270,9 @@ export function resolveOntology(
     for (const { definition: d } of definitions) {
       for (const endpoint of [...(d.from_types ?? []), ...(d.to_types ?? [])]) {
         if (!pageNames.has(endpoint)) {
-          throw Error(`Relationship ${d.name}: endpoint ${endpoint} is not a declared page type`);
+          throw new Error(
+            `Relationship ${d.name}: endpoint ${endpoint} is not a declared page type`,
+          );
         }
       }
     }

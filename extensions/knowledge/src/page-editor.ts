@@ -43,7 +43,7 @@ export async function pageEditor(
   const base =
     restored?.base ??
     (record ? { id: record.id, revision: record.revision, hash: record.hash } : undefined);
-  const key = restored?.key ?? crypto.randomUUID();
+  const draftKey = restored?.key ?? crypto.randomUUID();
   const dialog = element("dialog");
   dialog.className = "knowledge-editor";
   const recoveryNotice = element("p");
@@ -161,7 +161,7 @@ export async function pageEditor(
   ];
   const close = element("button", "Close draft");
   close.type = "button";
-  close.onclick = () => dialog.close();
+  close.addEventListener("click", () => dialog.close());
   const save = element("button", `Save ${kind}`);
   save.type = "submit";
   save.disabled = true;
@@ -196,14 +196,14 @@ export async function pageEditor(
   const reopen = element("button", "Reopen draft");
   reopen.type = "button";
   reopen.hidden = true;
-  reopen.onclick = () => {
+  reopen.addEventListener("click", () => {
     reopen.hidden = true;
     dialog.showModal();
-  };
+  });
   parent.append(reopen);
   const discard = element("button", "Discard draft");
   discard.type = "button";
-  discard.onclick = () => {
+  discard.addEventListener("click", () => {
     if (saving || submitted) {
       feedback.textContent = "Resolve the existing save before discarding this draft.";
       return;
@@ -211,17 +211,18 @@ export async function pageEditor(
     if (!window.confirm("Discard this unsaved draft?")) {
       return;
     }
-    recovery?.store.remove(key);
-    dialog.onclose = null;
+    recovery?.store.remove(draftKey);
+    dialog.removeEventListener("close", showReopen);
     dialog.close();
     dialog.remove();
     reopen.remove();
     recovery?.dismissed?.();
-  };
+  });
   form.append(discard);
-  dialog.onclose = () => {
+  const showReopen = () => {
     reopen.hidden = false;
   };
+  dialog.addEventListener("close", showReopen);
   dialog.showModal();
   let submitted: WriteInput | undefined = restored?.submitted,
     saving = false;
@@ -232,7 +233,7 @@ export async function pageEditor(
     try {
       recovery.store.write({
         version: 1,
-        key,
+        key: draftKey,
         kind,
         values: Object.fromEntries(
           Object.entries(values).map(([key, value]) => [key, value.value]),
@@ -278,9 +279,9 @@ export async function pageEditor(
       const ontology = await loadVocabulary(feature, kind === "relationship");
       fingerprint = ontology.fingerprint;
       type.replaceChildren();
-      for (const d of ontology.definitions.filter((d) => d.kind === kind)) {
-        const option = element("option", d.label);
-        option.value = d.name;
+      for (const definition of ontology.definitions.filter((d) => d.kind === kind)) {
+        const option = element("option", definition.label);
+        option.value = definition.name;
         type.append(option);
       }
       type.value =
@@ -304,14 +305,16 @@ export async function pageEditor(
             offset,
             limit: 100,
           });
-          for (const r of page.records.filter((r) => r.valid && r.lifecycle === "active")) {
+          for (const pageRecord of page.records.filter(
+            (r) => r.valid && r.lifecycle === "active",
+          )) {
             for (const key of ["from", "to", "owner"]) {
               const select = values[key];
               if (!(select instanceof HTMLSelectElement)) {
                 continue;
               }
-              const option = element("option", `${r.title} · ${r.type}`);
-              option.value = r.id;
+              const option = element("option", `${pageRecord.title} · ${pageRecord.type}`);
+              option.value = pageRecord.id;
               select.append(option);
             }
           }
@@ -319,7 +322,7 @@ export async function pageEditor(
         }
         for (const key of ["from", "to", "owner"]) {
           if (values[key]) {
-            values[key].value = selectedPages[key];
+            values[key].value = selectedPages[key]!;
           }
         }
       }
@@ -337,11 +340,11 @@ export async function pageEditor(
       reloadOptions.hidden = false;
     }
   };
-  reloadOptions.onclick = () => {
+  reloadOptions.addEventListener("click", () => {
     void loadOptions();
-  };
+  });
   await loadOptions();
-  form.onsubmit = async (event) => {
+  const submit = async (event: SubmitEvent) => {
     event.preventDefault();
     if (saving) {
       return;
@@ -430,7 +433,7 @@ export async function pageEditor(
               : {}),
           };
         } else {
-          const evidence = JSON.parse(values.evidence.value);
+          const evidence = JSON.parse(values.evidence!.value);
           if (!Array.isArray(evidence)) {
             throw new Error("Evidence must be a JSON array.");
           }
@@ -442,7 +445,7 @@ export async function pageEditor(
               ...(kind === "claim" ? ["occurred_at", "owner", "due_at"] : []),
             ]
               .filter((key) => values[key]?.value)
-              .map((key) => [key, values[key].value]),
+              .map((key) => [key, values[key]!.value]),
           );
           const assertion = {
             ...common,
@@ -454,14 +457,14 @@ export async function pageEditor(
             kind === "claim"
               ? {
                   ...assertion,
-                  claim_kind: values.claim_kind.value,
-                  assertion_origin: values.assertion_origin.value,
+                  claim_kind: values.claim_kind!.value,
+                  assertion_origin: values.assertion_origin!.value,
                   entities: lines("entities"),
                 }
               : {
                   ...assertion,
-                  from: values.from.value,
-                  to: values.to.value,
+                  from: values.from!.value,
+                  to: values.to!.value,
                   label: type.value,
                   fields: parsed,
                 };
@@ -485,8 +488,8 @@ export async function pageEditor(
             ? await feature.invoke("create_relationship", submitted as RelationshipInput)
             : await feature.invoke("save_page", submitted as SavePage);
       if (receipt.state === "published") {
-        recovery?.store.remove(key);
-        dialog.onclose = null;
+        recovery?.store.remove(draftKey);
+        dialog.removeEventListener("close", showReopen);
         dialog.close();
         dialog.remove();
         reopen.remove();
@@ -536,6 +539,9 @@ export async function pageEditor(
       }
     }
   };
+  form.addEventListener("submit", (event) => {
+    void submit(event);
+  });
   return {
     reopen() {
       if (!dialog.open) {

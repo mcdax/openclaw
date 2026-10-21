@@ -25,7 +25,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, classN
 const button = (text: string, run: () => void, className = "knowledge-button") => {
   const node = el("button", text, className);
   node.type = "button";
-  node.onclick = run;
+  node.addEventListener("click", run);
   return node;
 };
 
@@ -65,9 +65,9 @@ export function temporalFilterForm(
   };
   const field = el("select");
   field.name = "timeField";
-  for (const [value, name] of Object.entries(fields)) {
-    const option = el("option", `${name} (${value})`);
-    option.value = value;
+  for (const [fieldName, name] of Object.entries(fields)) {
+    const option = el("option", `${name} (${fieldName})`);
+    option.value = fieldName;
     field.append(option);
   }
   field.value = value.timeField;
@@ -98,7 +98,7 @@ export function temporalFilterForm(
   const error = el("p", "", "knowledge-error knowledge-temporal-help");
   error.setAttribute("role", "alert");
   form.append(submit, reset, help, error);
-  form.onsubmit = (event) => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
     const next = {
       since: inputs.since.value.trim(),
@@ -109,6 +109,6 @@ export function temporalFilterForm(
     if (!error.textContent) {
       apply(next);
     }
-  };
+  });
   return form;
 }

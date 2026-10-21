@@ -173,7 +173,7 @@ export function mapMetadataEvidence(
     if (!Array.isArray(metadata.continuity)) {
       throw new Error("Invalid continuity collection.");
     }
-    metadata.continuity = metadata.continuity.map((value) => mapBasis(value, map));
+    metadata.continuity = metadata.continuity.map((entry) => mapBasis(entry, map));
   }
   // Identity candidates contain evidence, whereas identity context is plain authored text.
   if (metadata.identity !== undefined) {
@@ -189,7 +189,7 @@ export function mapMetadataEvidence(
       if (!Array.isArray(identity.candidates)) {
         throw new Error("Invalid identity candidates.");
       }
-      identity.candidates = identity.candidates.map((value) => mapBasis(value, map));
+      identity.candidates = identity.candidates.map((entry) => mapBasis(entry, map));
     }
     metadata.identity = identity;
   }

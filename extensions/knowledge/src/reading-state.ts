@@ -29,7 +29,7 @@ export function captureReadingState(content: HTMLElement) {
   for (let node: Element | null = content; node; node = node.parentElement) {
     scroll.push({ node, top: node.scrollTop, left: node.scrollLeft });
   }
-  const windowScroll = [window.scrollX, window.scrollY];
+  const windowScroll = [window.scrollX, window.scrollY] as const;
   return {
     expanded(node: HTMLDetailsElement) {
       return details.get(key(node)) ?? node.open;

@@ -144,20 +144,18 @@ export function createStoreOperations(stores: Stores) {
       agents: agents.map((id) => {
         const supported = agentIdPattern.test(id),
           binding = supported ? effectiveBinding(membership, id) : undefined;
-        return {
-          id,
-          name: names.get(id) ?? id,
-          supported,
-          ...(binding ? { binding } : {}),
-          ...(!supported
+        return Object.assign(
+          { id, name: names.get(id) ?? id, supported },
+          binding ? { binding } : {},
+          !supported
             ? { issue: "This agent ID can't be used with Knowledge stores." }
             : !binding
               ? {
                   issue:
                     "This agent is assigned to more than one store; fix the stores configuration.",
                 }
-              : {}),
-        };
+              : {},
+        );
       }),
       stores: entries,
       canChange,
@@ -193,7 +191,7 @@ export function createStoreOperations(stores: Stores) {
         const access = {
           agentId,
           scope: { visibility: "private" as const },
-          assertCurrent() {
+          assertCurrent: () => {
             requireOperator(context);
             if (runtime.retired) {
               throw new Error("Store runtime retired.");
@@ -233,9 +231,9 @@ export function createStoreOperations(stores: Stores) {
         store.agents = store.agents.filter((a) => a !== agent);
       }
     };
-    const change = input.change;
+    const requested = input.change;
     let rebind: { from: string; to: string; label: string } | null = null;
-    if (change.kind === "share_existing") {
+    if (requested.kind === "share_existing") {
       if (current !== `agent:${input.agent}`) {
         throw new Rejected("invalid", "Only an agent's own store can be shared from here.");
       }
@@ -248,8 +246,8 @@ export function createStoreOperations(stores: Stores) {
             : "This store needs recovery before it can be shared.",
         );
       }
-      const label = change.label.trim(),
-        others = [...new Set(change.agents)];
+      const label = requested.label.trim(),
+        others = [...new Set(requested.agents)];
       if (!label) {
         throw new Rejected("invalid", "Enter a name for the shared store.");
       }
@@ -277,26 +275,26 @@ export function createStoreOperations(stores: Stores) {
       }
       section[key] = { label, agents: [input.agent, ...others] };
       rebind = { from: current, to: `named:${key}`, label };
-    } else if (change.kind === "use_named") {
-      const retained = registry.bindings[`named:${change.store}`] !== undefined;
-      if (!section[change.store] && !retained) {
+    } else if (requested.kind === "use_named") {
+      const retained = registry.bindings[`named:${requested.store}`] !== undefined;
+      if (!section[requested.store] && !retained) {
         throw new Rejected("invalid", "That shared store doesn't exist.");
       }
-      const targetState = bindingState(registry, `named:${change.store}`);
+      const targetState = bindingState(registry, `named:${requested.store}`);
       if (targetState === "unavailable" || targetState === "recovery-required") {
         throw new Rejected("invalid", "That store couldn't be opened and needs recovery first.");
       }
-      if (current === `named:${change.store}`) {
+      if (current === `named:${requested.store}`) {
         throw new Rejected("invalid", "This agent already uses that store.");
       }
       leave(input.agent);
-      section[change.store] ??= {
-        ...(registry.labels[`named:${change.store}`]
-          ? { label: registry.labels[`named:${change.store}`] }
+      section[requested.store] ??= {
+        ...(registry.labels[`named:${requested.store}`]
+          ? { label: registry.labels[`named:${requested.store}`] }
           : {}),
         agents: [],
       };
-      section[change.store]!.agents.push(input.agent);
+      section[requested.store]!.agents.push(input.agent);
     } else {
       if (current === `agent:${input.agent}`) {
         throw new Rejected("invalid", "This agent already uses its own store.");

@@ -16,7 +16,7 @@ export function annotationProblems(
   const issues: string[] = [];
   const reference = (id: string, kind: string) => {
     const found = byId(id);
-    if (id === m.id || found.length !== 1 || found[0].kind !== kind) {
+    if (id === m.id || found.length !== 1 || found[0]!.kind !== kind) {
       issues.push(`Invalid ${kind} annotation reference: ${id}`);
     }
   };

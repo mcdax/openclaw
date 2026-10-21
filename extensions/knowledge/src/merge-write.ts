@@ -32,7 +32,7 @@ export function rewriteRecord(
   for (const key of remove) {
     delete metadata[key];
   }
-  const doc = parseDocument(/^(?:﻿)?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(previous.raw)![1]);
+  const doc = parseDocument(/^(?:﻿)?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(previous.raw)![1]!);
   for (const [key, value] of Object.entries(set)) {
     doc.set(key, doc.createNode(value, { aliasDuplicateObjects: false }));
   }

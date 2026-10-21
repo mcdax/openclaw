@@ -4,6 +4,9 @@ import { RECORD_MAX_BYTES, AUXILIARY_MAX_BYTES } from "./limits.js";
 import { SOURCE_DESCRIPTOR_MAX_BYTES } from "./source-descriptors.js";
 import { digest, MAX_ENTRIES } from "./vault.js";
 
+// Backslash or any C0 control character.
+const UNSAFE_PATH_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);
+
 export type PublicationRole = "record" | "auxiliary" | "source-descriptor";
 /** Classify only canonical destinations; retained names inherit their destination role. */
 export function publicationRole(relative: string): PublicationRole {
@@ -49,7 +52,7 @@ export class PublicationFiles {
     const parts = relative.split("/");
     if (
       !parts.length ||
-      parts.some((p) => !p || p === "." || p === ".." || /[\\\x00-\x1f]/.test(p))
+      parts.some((p) => !p || p === "." || p === ".." || UNSAFE_PATH_CHARACTER.test(p))
     ) {
       throw new Error("Unsafe publication path");
     }
@@ -248,7 +251,7 @@ export class PublicationFiles {
       fs.linkSync(this.guard(change.stage), this.guard(change.path, true));
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === "EEXIST") {
-        throw Error("conflict", { cause: e });
+        throw new Error("conflict", { cause: e });
       }
       throw e;
     }
@@ -300,7 +303,7 @@ export class PublicationFiles {
         if (++count > MAX_ENTRIES) {
           throw new Error(`Vault exceeds ${MAX_ENTRIES.toLocaleString("en-US")} entries`);
         }
-        if (/[\\\x00-\x1f]/.test(name)) {
+        if (UNSAFE_PATH_CHARACTER.test(name)) {
           throw new Error("Unsafe publication path");
         }
         const target = `${relative}/${name}`,

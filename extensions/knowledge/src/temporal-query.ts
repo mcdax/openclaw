@@ -15,8 +15,8 @@ export function sameTemporalDate(a: string | undefined, b: string | undefined): 
   return (
     Boolean(a) &&
     Boolean(b) &&
-    (a.length === 10) === (b.length === 10) &&
-    dateInterval(a).start === dateInterval(b).start
+    (a!.length === 10) === (b!.length === 10) &&
+    dateInterval(a!).start === dateInterval(b!).start
   );
 }
 

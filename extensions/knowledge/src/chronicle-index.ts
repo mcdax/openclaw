@@ -1,10 +1,5 @@
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import type { LoadedRecord } from "./model.js";
-import { digest } from "./vault.js";
-
-// Redirected references change what a record is indexed under without changing its file hash.
-const indexHash = (r: LoadedRecord) =>
-  r.redirected ? digest(r.hash + JSON.stringify(r.redirected)) : r.hash;
 import {
   dateInterval,
   recordDate,
@@ -12,6 +7,11 @@ import {
   type TimeField,
   type TimeFilter,
 } from "./temporal-query.js";
+import { digest } from "./vault.js";
+
+// Redirected references change what a record is indexed under without changing its file hash.
+const indexHash = (r: LoadedRecord) =>
+  r.redirected ? digest(r.hash + JSON.stringify(r.redirected)) : r.hash;
 
 const fields: TimeField[] = ["occurred_at", "recorded_at", "updated_at", "due_at"];
 
@@ -77,7 +77,7 @@ export function reconcileChronicle(
       binding,
       records
         .map((r) => [r.id, r.path, indexHash(r), r.type, String(r.revision)])
-        .toSorted((a, b) => a[0].localeCompare(b[0])),
+        .toSorted((a, b) => a[0]!.localeCompare(b[0]!)),
     ]),
   );
 }

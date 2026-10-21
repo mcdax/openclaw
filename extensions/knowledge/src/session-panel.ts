@@ -20,7 +20,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, cls?: 
 const button = (label: string, click: () => void) => {
   const n = el("button", label, "knowledge-button");
   n.type = "button";
-  n.onclick = click;
+  n.addEventListener("click", click);
   return n;
 };
 const operationLabel = (op: string, action: string) =>
@@ -48,7 +48,8 @@ export function registerSessionPanel(host: ControlUiHost) {
   const panel: ControlUiPanel = {
     id: "session-activity",
     label: "Knowledge",
-    mount(container, context) {
+    mount(container, initialContext) {
+      let context = initialContext;
       const root = el("section", undefined, "knowledge-page knowledge-session-panel");
       root.setAttribute("aria-label", "Knowledge session activity");
       const header = el("header", undefined, "knowledge-session-header"),
@@ -249,13 +250,13 @@ export function registerSessionPanel(host: ControlUiHost) {
           detail.append(el("h3", result.record.title));
           const full = el("a", "Open full page", "knowledge-session-full");
           full.href = host.navigation.pageHref(pageTarget(id));
-          full.onclick = (e) => {
+          full.addEventListener("click", (e) => {
             if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
               return;
             }
             e.preventDefault();
             host.navigation.openPage(pageTarget(id));
-          };
+          });
           detail.append(
             full,
             markdownView(result.record.body ?? "", (nextId) => void preview(nextId), result.links),
@@ -281,7 +282,8 @@ export function registerSessionPanel(host: ControlUiHost) {
           }
         }
       }
-      async function load(more = false) {
+      async function load(olderRequested = false) {
+        let more = olderRequested;
         sync();
         if (disposed || !context.presented || busy) {
           return;

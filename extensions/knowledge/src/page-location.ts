@@ -18,10 +18,18 @@ export type KnowledgeLocation = {
   timeField: "occurred_at" | "recorded_at" | "updated_at" | "due_at";
   cursor?: { upperSequence: number; beforeSequence: number };
 };
+// True when `value` holds a C0 control character or DEL.
+const hasControlCharacter = (value: string) => {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) {
+      return true;
+    }
+  }
+  return false;
+};
 const text = (value: unknown, max: number) =>
-  typeof value === "string" && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value)
-    ? value
-    : "";
+  typeof value === "string" && value.length <= max && !hasControlCharacter(value) ? value : "";
 const integer = (value: unknown, max = Number.MAX_SAFE_INTEGER) =>
   typeof value === "string" &&
   /^\d{1,16}$/.test(value) &&
@@ -31,8 +39,11 @@ const integer = (value: unknown, max = Number.MAX_SAFE_INTEGER) =>
     : 0;
 
 export function readLocation(params: Readonly<Record<string, string>> = {}): KnowledgeLocation {
-  const tab = ["browse", "search", "settings"].includes(params.view)
-    ? (params.view as KnowledgeLocation["tab"])
+  const view = params.view ?? "",
+    origin = params.origin ?? "",
+    timeField = params.timeField ?? "";
+  const tab = ["browse", "search", "settings"].includes(view)
+    ? (view as KnowledgeLocation["tab"])
     : "recent";
   const upperSequence = integer(params.upper),
     beforeSequence = integer(params.before);
@@ -41,7 +52,7 @@ export function readLocation(params: Readonly<Record<string, string>> = {}): Kno
   const back =
     trail && /^(0|[1-9]\d*)(,(0|[1-9]\d*))*$/.test(trail) ? trail.split(",").map(Number) : [];
   const validBack = back.every(
-    (n, i) => Number.isSafeInteger(n) && n < offset && (i === 0 || n > back[i - 1]),
+    (n, i) => Number.isSafeInteger(n) && n < offset && (i === 0 || n > back[i - 1]!),
   );
   return {
     agent: text(params.agent, 64),
@@ -57,15 +68,13 @@ export function readLocation(params: Readonly<Record<string, string>> = {}): Kno
     query: text(params.q, 200),
     filter: text(params.filter, 200),
     history: params.history === "1",
-    origin: ["source", "user_belief", "agent_inference"].includes(params.origin)
-      ? params.origin
-      : "",
+    origin: ["source", "user_belief", "agent_inference"].includes(origin) ? origin : "",
     offset,
     back: validBack ? back : [],
     since: text(params.since, 40),
     until: text(params.until, 40),
-    timeField: ["recorded_at", "updated_at", "due_at"].includes(params.timeField)
-      ? (params.timeField as KnowledgeLocation["timeField"])
+    timeField: ["recorded_at", "updated_at", "due_at"].includes(timeField)
+      ? (timeField as KnowledgeLocation["timeField"])
       : "occurred_at",
     ...(upperSequence && beforeSequence && beforeSequence <= upperSequence
       ? { cursor: { upperSequence, beforeSequence } }

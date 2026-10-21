@@ -283,22 +283,20 @@ export function recentActivity(
         source: recordSummary(source),
         total: records.length,
         counts,
-        records: records
-          .slice(input.recordOffset ?? 0, (input.recordOffset ?? 0) + 20)
-          .map((r) =>
-            Object.assign(
-              recordSummary(r),
-              {
-                change: String(members.find((member) => member.id === r.id)?.change ?? "observed"),
-              },
-              r.kind === "claim" ? { card: claimCard(r, active) } : {},
-            ),
+        records: records.slice(input.recordOffset ?? 0, (input.recordOffset ?? 0) + 20).map((r) =>
+          Object.assign(
+            recordSummary(r),
+            {
+              change: String(members.find((member) => member.id === r.id)?.change ?? "observed"),
+            },
+            r.kind === "claim" ? { card: claimCard(r, active) } : {},
           ),
+        ),
         truncated: records.length > (input.recordOffset ?? 0) + 20,
         nextRecordOffset:
           records.length > (input.recordOffset ?? 0) + 20 ? (input.recordOffset ?? 0) + 20 : null,
         firstSaved: String(members.at(-1)!.at),
-        lastSaved: String(members[0].at),
+        lastSaved: String(members[0]!.at),
       };
       if (input.includeEndpoints) {
         const ids = new Set(

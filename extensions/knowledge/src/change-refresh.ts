@@ -28,7 +28,7 @@ export function coalesceChanges(
   return {
     /** True when a periodic resync may read now. */
     active,
-    changed() {
+    changed: () => {
       if (!active()) {
         clearTimeout(timer);
         timer = undefined;

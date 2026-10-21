@@ -28,20 +28,18 @@ export const CONNECTION_RESPONSE_BYTES = 24 * 1024;
 
 export function connections(
   data: Awaited<ReturnType<SampleVault["scan"]>>,
-  input: Static<typeof ConnectionsInput>,
+  requested: Static<typeof ConnectionsInput>,
   withdrawn = new Set<string>(),
 ): Static<typeof ConnectionsOutput> {
-  const full = input.view === "full";
-  if (input.includeCards && !full) {
+  const full = requested.view === "full";
+  if (requested.includeCards && !full) {
     throw new Error("includeCards requires view=full; compact connections omit card bodies.");
   }
-  const records = eligible(data, withdrawn, input.historical ?? false);
+  const records = eligible(data, withdrawn, requested.historical ?? false);
   // A merged page's connections are its survivor's.
-  const merged = input.historical ? undefined : mergeRedirects(data.records).get(input.id);
-  const redirectedFrom = merged && !withdrawn.has(input.id) ? input.id : undefined;
-  if (redirectedFrom) {
-    input = { ...input, id: merged! };
-  }
+  const merged = requested.historical ? undefined : mergeRedirects(data.records).get(requested.id);
+  const redirectedFrom = merged && !withdrawn.has(requested.id) ? requested.id : undefined;
+  const input = redirectedFrom ? { ...requested, id: merged! } : requested;
   const links = linkTargets(data.records, records);
   const rows: Static<typeof ConnectionsOutput>["connections"] = [];
   if (records.some((r) => r.id === input.id)) {
@@ -67,7 +65,7 @@ export function connections(
       }
       const summary = full ? recordSummary(r) : compact(recordSummary(r));
       for (const direction of directions) {
-        if (!input.direction || input.direction === direction)
+        if (!input.direction || input.direction === direction) {
           rows.push({
             direction,
             record: {
@@ -82,6 +80,7 @@ export function connections(
                 }
               : {}),
           });
+        }
       }
     }
   }
@@ -102,13 +101,14 @@ export function connections(
       );
       if (source.id === current.id) {
         for (const target of records) {
-          if (targets.has(target.id) && target.id !== source.id)
+          if (targets.has(target.id) && target.id !== source.id) {
             rows.push({
               direction: "links",
               record: full ? recordSummary(target) : compact(recordSummary(target)),
               label: "References",
               ...(full ? { evidence: [], evidenceTruncated: false } : {}),
             });
+          }
         }
       } else if (targets.has(current.id)) {
         rows.push({

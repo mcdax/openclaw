@@ -39,7 +39,7 @@ export class DraftStore {
   read(): EditorDraft | undefined {
     const raw = this.storage.getItem(this.key);
     if (!raw) {
-      return;
+      return undefined;
     }
     if (raw.length > 400000) {
       throw new Error("Stored draft is too large; it was preserved but not opened.");

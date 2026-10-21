@@ -11,8 +11,14 @@ import { eligible } from "./retrieval.js";
 import { splitsPair } from "./text-window.js";
 import type { SampleVault } from "./vault.js";
 
-const summary = ({ body, raw, hash, metadata, redirected: _redirected, ...rest }: LoadedRecord) =>
-  rest;
+const summary = ({
+  body: _body,
+  raw: _raw,
+  hash: _hash,
+  metadata: _metadata,
+  redirected: _redirected,
+  ...rest
+}: LoadedRecord) => rest;
 const withoutConfidenceEvidence = <
   T extends { attributionConfidence?: { level: "high" | "medium" | "low"; basis: string } },
 >(
@@ -100,7 +106,10 @@ function boundRecord(result: RecordOutput, input: RecordInput, compact = false):
   }
   for (const key of ["evidence", "references"] as const) {
     const rows = result[key];
-    while (rows && rows.length > 1 && size() > RECORD_RESPONSE_BYTES) {
+    if (!rows) {
+      continue;
+    }
+    while (rows.length > 1 && size() > RECORD_RESPONSE_BYTES) {
       rows.pop();
       if (key === "evidence") {
         result.nextEvidenceOffset = (input.evidenceOffset ?? 0) + rows.length;
@@ -204,11 +213,11 @@ export async function inspectRecord(vault: SampleVault, input: RecordInput): Pro
   const refs = detail.references.map(withoutConfidenceEvidence);
   // Authored references to merged pages are shown as the pages they resolve to.
   const current = (id?: string) => id && (detail.redirects?.find((x) => x.from === id)?.to ?? id);
-  const owner = refs.find((r) => r.id === current(metadata.owner)),
-    source = refs.find((r) => r.id === current(metadata.source_page));
+  const owner = refs.find((ref) => ref.id === current(metadata.owner)),
+    source = refs.find((ref) => ref.id === current(metadata.source_page));
   result.record = {
     ...withoutConfidenceEvidence(base),
-    about: refs.filter((r) => metadata.entities?.some((e) => current(e) === r.id)).slice(0, 2),
+    about: refs.filter((ref) => metadata.entities?.some((e) => current(e) === ref.id)).slice(0, 2),
     ...(view === "content" ? { body: chunk } : view === "raw" ? { raw: chunk } : {}),
     ...(metadata.attribution ? { attribution: metadata.attribution } : {}),
     ...(metadata.assertion_origin ? { assertionOrigin: metadata.assertion_origin } : {}),
@@ -363,15 +372,17 @@ export async function inspectOntology(
       const records = eligible(data, undefined, false).filter(
         (r) => r.kind === def.kind && r.type === def.name,
       );
-      return {
-        name: def.name,
-        label: def.label,
-        kind: def.kind,
-        primitive: def.primitive ?? "",
-        description: def.description,
-        aliases: def.aliases ?? [],
-        recordCount: records.length,
-        ...(view === "definitions"
+      return Object.assign(
+        {
+          name: def.name,
+          label: def.label,
+          kind: def.kind,
+          primitive: def.primitive ?? "",
+          description: def.description,
+          aliases: def.aliases ?? [],
+          recordCount: records.length,
+        },
+        view === "definitions"
           ? {
               directory: def.directory,
               fields: def.fields,
@@ -383,11 +394,11 @@ export async function inspectOntology(
               ontology: d.ontology,
               version: d.version,
             }
-          : {}),
-        ...(input.includeRecords
+          : {},
+        input.includeRecords
           ? { records: records.slice(0, 20).map(summary), recordsTruncated: records.length > 20 }
-          : {}),
-      };
+          : {},
+      );
     });
   }
   return result;

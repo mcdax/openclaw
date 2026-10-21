@@ -34,7 +34,7 @@ export function prepareEvidenceRevision(
     metadata.evidence = [...input.evidence, ...annotationEvidence(metadata)];
   }
   const match = /^(?:\uFEFF)?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(previous.raw)!;
-  const doc = parseDocument(match[1]);
+  const doc = parseDocument(match[1]!);
   for (const key of [
     "revision",
     "updated_at",

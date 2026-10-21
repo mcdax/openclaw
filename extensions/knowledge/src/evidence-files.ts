@@ -65,7 +65,7 @@ export function inspectEvidence(root: string, e: Evidence, previewChars = 0) {
   }
   const textual =
     ranged ||
-    /^text\//.test(e.mediaType ?? "") ||
+    (e.mediaType ?? "").startsWith("text/") ||
     /(?:json|xml|yaml|javascript)/.test(e.mediaType ?? "") ||
     /\.(txt|md|csv|json|jsonl|ya?ml|log|xml|html|ts|js)$/i.test(e.filename ?? e.path);
   return withEvidenceFile(root, e.path, (fd, size) => {
@@ -94,8 +94,8 @@ export function inspectEvidence(root: string, e: Evidence, previewChars = 0) {
         tail = part.slice(-e.quote.length);
       }
     };
-    const text = (value: string, final = false) => {
-      value = pendingCR + value;
+    const text = (input: string, final = false) => {
+      let value = pendingCR + input;
       pendingCR = "";
       if (!final && value.endsWith("\r")) {
         pendingCR = "\r";
@@ -103,7 +103,7 @@ export function inspectEvidence(root: string, e: Evidence, previewChars = 0) {
       }
       const parts = value.replace(/\r\n/g, "\n").split("\n");
       for (let i = 0; i < parts.length; i++) {
-        collect(parts[i]);
+        collect(parts[i]!);
         if (i < parts.length - 1) {
           if (e.end_line === undefined || line < e.end_line) {
             collect("\n");
@@ -164,7 +164,7 @@ type LoadedEvidence = {
 const isTextual = (e: Evidence) =>
   e.start_line !== undefined ||
   e.end_line !== undefined ||
-  /^text\//.test(e.mediaType ?? "") ||
+  (e.mediaType ?? "").startsWith("text/") ||
   /(?:json|xml|yaml|javascript)/.test(e.mediaType ?? "") ||
   /\.(txt|md|csv|json|jsonl|ya?ml|log|xml|html|ts|js)$/i.test(e.filename ?? e.path);
 

@@ -69,9 +69,10 @@ export class StoreRegistry {
    * the operational database's link guard would otherwise reject. */
   readonly stateRoot: string;
   /** `converting` is only for the conversion tool, which owns an unfinished journal. */
-  constructor(stateRoot: string, options: { converting?: boolean } = {}) {
-    mkdirSync(stateRoot, { recursive: true, mode: 0o700 });
-    this.stateRoot = stateRoot = realpathSync(stateRoot);
+  constructor(requestedRoot: string, options: { converting?: boolean } = {}) {
+    mkdirSync(requestedRoot, { recursive: true, mode: 0o700 });
+    const stateRoot = realpathSync(requestedRoot);
+    this.stateRoot = stateRoot;
     const { registry, stores, sentinel } = registryPaths(stateRoot);
     // Adopted stores live outside stores/, so a missing or emptied registry is
     // detected through the sentinel written when the registry was created.
@@ -198,7 +199,7 @@ export class StoreRegistry {
         expectedRevision: String(row.expected_revision),
         nextSection: String(row.next_section),
         nextRevision: String(row.next_revision),
-        rebind: row.rebind ? JSON.parse(String(row.rebind)) : null,
+        rebind: row.rebind ? JSON.parse(row.rebind as string) : null,
         message: String(row.message),
         updatedAt: String(row.updated_at),
       }

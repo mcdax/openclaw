@@ -9,8 +9,8 @@ export function splitsPair(text: string, offset: number): boolean {
   return (
     offset > 0 &&
     offset < text.length &&
-    /[\uD800-\uDBFF]/.test(text[offset - 1]) &&
-    /[\uDC00-\uDFFF]/.test(text[offset])
+    /[\uD800-\uDBFF]/.test(text[offset - 1]!) &&
+    /[\uDC00-\uDFFF]/.test(text[offset]!)
   );
 }
 

@@ -30,7 +30,7 @@ export function mergeProblem(
     if (!candidates || candidates.length !== 1) {
       return "Merge target is missing or ambiguous: " + current.metadata.merged_into;
     }
-    const target = candidates[0];
+    const target = candidates[0]!;
     if (target.id === record.id) {
       return "Merge chain forms a cycle.";
     }

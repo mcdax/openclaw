@@ -190,23 +190,29 @@ export function createKnowledgeMemoryRuntime(stores: Stores): MemoryProviderRunt
                       request.minScore === undefined ||
                       (h.score !== null && h.score >= request.minScore),
                   )
-                  .map((h) => ({
-                    reference: reference(
-                      { id: h.record.id, revision: h.citation.revision, hash: h.citation.hash },
-                      vaultId,
-                    ),
-                    excerpt: `${h.record.title}\n${attribution(h.assertionOrigin, h.attribution)}\n${h.snippet.matchLocated === false ? "Opening excerpt (not the match location):\n" : ""}${h.snippet.text}`,
-                    ...(h.score === null ? {} : { score: h.score }),
-                    source: "memory",
-                    citations: [
+                  .map((h) =>
+                    Object.assign(
                       {
-                        label: `${h.record.title} (${h.citation.path})`,
-                        reference: reference(h.citation, vaultId),
+                        reference: reference(
+                          { id: h.record.id, revision: h.citation.revision, hash: h.citation.hash },
+                          vaultId,
+                        ),
+                        excerpt: `${h.record.title}\n${attribution(h.assertionOrigin, h.attribution)}\n${h.snippet.matchLocated === false ? "Opening excerpt (not the match location):\n" : ""}${h.snippet.text}`,
                       },
-                    ],
-                    // Evidence-backed is not synonymous with trusted automatic instruction/selection.
-                    automaticRecall: { eligible: false },
-                  })),
+                      h.score === null ? {} : { score: h.score },
+                      {
+                        source: "memory" as const,
+                        citations: [
+                          {
+                            label: `${h.record.title} (${h.citation.path})`,
+                            reference: reference(h.citation, vaultId),
+                          },
+                        ],
+                        // Evidence-backed is not synonymous with trusted automatic instruction/selection.
+                        automaticRecall: { eligible: false as const },
+                      },
+                    ),
+                  ),
                 ...(nextCursor ? { nextCursor } : {}),
                 coverage:
                   result.coverage.complete && !nextCursor && !omittedSessions

@@ -27,14 +27,14 @@ export function displayAliases(
       return false;
     }
     const labelled = /^(.+?)\s+\(.+\)$/u.exec(alias.trim());
-    return !labelled || !known.has(key(labelled[1]));
+    return !labelled || !known.has(key(labelled[1]!));
   });
 }
 export function agentDisplayName(id: string | undefined, agents: readonly ControlUiAgent[]) {
   if (!id) {
     return undefined;
   }
-  const agent = agents.find((agent) => agent.id === id);
+  const agent = agents.find((candidate) => candidate.id === id);
   return agent?.identity?.name?.trim() || agent?.name?.trim() || id;
 }
 export function confidenceView(
@@ -64,7 +64,7 @@ export function confidenceView(
   }
   node.append(
     bars,
-    `${confidence.level[0].toUpperCase()}${confidence.level.slice(1)}${compact ? "" : " attribution confidence"}`,
+    `${confidence.level[0]!.toUpperCase()}${confidence.level.slice(1)}${compact ? "" : " attribution confidence"}`,
   );
   return node;
 }

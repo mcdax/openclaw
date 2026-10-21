@@ -95,7 +95,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, classN
 function button(label: string, action: () => void, className?: string) {
   const node = el("button", label, className);
   node.type = "button";
-  node.onclick = action;
+  node.addEventListener("click", action);
   return node;
 }
 

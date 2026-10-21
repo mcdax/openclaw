@@ -26,10 +26,11 @@ export const markdown = new Marked({
           return {
             type: "wikilink",
             raw: match[0],
-            target: match[1].trim(),
-            label: (match[2] ?? match[1]).trim(),
+            target: match[1]!.trim(),
+            label: (match[2] ?? match[1]!).trim(),
           };
         }
+        return undefined;
       },
       renderer: (token) =>
         `<a href="${escapeHtml(wikiHref(token.target))}">${escapeHtml(token.label)}</a>`,
@@ -65,7 +66,7 @@ export function extractLinks(body: string): string[] {
     })(),
   );
   const links = new Set<string>();
-  markdown.walkTokens(tokens, (token) => {
+  void markdown.walkTokens(tokens, (token) => {
     if (token.type === "wikilink") {
       links.add(wikiHref(token.target));
     }
@@ -87,13 +88,15 @@ type LinkRecord = {
   body: string;
   metadata: { aliases?: string[] };
 };
+// Backslash or any C0 control character.
+const UNSAFE_TARGET_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);
 const normalize = (s: string) => s.normalize("NFKC").toLowerCase();
 function cleanPath(value: string): string | undefined {
   const parts: string[] = [];
   for (const part of value.split("/")) {
     if (part === "..") {
       if (!parts.length) {
-        return;
+        return undefined;
       }
       parts.pop();
     } else if (part && part !== ".") {
@@ -162,11 +165,15 @@ export function resolveLinks(
     }
     let target: string;
     try {
-      target = decodeURIComponent(wiki ? href.slice(6) : href).split("#")[0];
+      target = decodeURIComponent(wiki ? href.slice(6) : href).split("#")[0]!;
     } catch {
       target = "";
     }
-    if (!target || /[\\\x00-\x1f]/.test(target) || /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(target)) {
+    if (
+      !target ||
+      UNSAFE_TARGET_CHARACTER.test(target) ||
+      /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(target)
+    ) {
       results.push({ href, status: "missing" });
       continue;
     }
@@ -179,7 +186,9 @@ export function resolveLinks(
     let matches = new Set<LinkRecord>();
     for (const p of paths) {
       if (p) {
-        for (const r of index.byPath.get(normalize(p.replace(/\.md$/i, ""))) ?? []) matches.add(r);
+        for (const r of index.byPath.get(normalize(p.replace(/\.md$/i, ""))) ?? []) {
+          matches.add(r);
+        }
       }
     }
     // Old UUID paths survive renames. IDs remain authoritative, not inferred from filenames.

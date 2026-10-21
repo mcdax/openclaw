@@ -41,7 +41,7 @@ function localRefs<T extends TSchema>(schema: T) {
       properties?: Record<string, TSchema>;
     };
     if (shape.pattern === "^[a-zA-Z0-9][a-zA-Z0-9_-]{7,95}$") {
-      const { pattern, type, ...rest } = shape;
+      const { pattern: _pattern, type: _type, ...rest } = shape;
       return { ...rest, ...ref };
     }
     if (shape.type === "array") {
@@ -81,14 +81,16 @@ function compactBatchSchema<T extends TSchema>(schema: T) {
     }).map(([name, value]) => [JSON.stringify(value), name]),
   );
   const definitions: Record<string, TSchema> = {};
-  const visit = (value: TSchema, define = false): TSchema => {
-    const name = shared.get(JSON.stringify(value));
+  const visit = (original: TSchema, define = false): TSchema => {
+    const name = shared.get(JSON.stringify(original));
     if (name && !define) {
-      definitions[name] ??= visit(value, true);
+      definitions[name] ??= visit(original, true);
       return { $ref: `#/$defs/${name}` };
     }
-    const { description, ...compact } = value as TSchema & { description?: string };
-    value = compact;
+    const { description: _description, ...compact } = original as TSchema & {
+      description?: string;
+    };
+    const value: TSchema = compact;
     const shape = value as {
       type?: string;
       anyOf?: { const?: unknown }[];
@@ -97,7 +99,11 @@ function compactBatchSchema<T extends TSchema>(schema: T) {
     };
     // Share the array, not just its items; $ref siblings retain each use's bounds.
     if (shape.type === "array" && JSON.stringify(shape.items) === evidenceShape) {
-      const { type, items, ...bounds } = value as TSchema & { type?: string; items?: TSchema };
+      const {
+        type: _type,
+        items: _items,
+        ...bounds
+      } = value as TSchema & { type?: string; items?: TSchema };
       definitions.e ??= { type: "array", items: visit(Evidence) };
       return { ...bounds, $ref: "#/$defs/e" };
     }

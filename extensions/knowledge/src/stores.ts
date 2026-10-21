@@ -213,7 +213,9 @@ export class Stores {
       const vaults = new Set(
         affected.map((agent) => this.vaultFor(agent)).filter((v): v is string => Boolean(v)),
       );
-      await Promise.all([...vaults].map((vaultId) => this.runtimes.get(vaultId)?.drain()));
+      await Promise.all(
+        [...vaults].map((vaultId) => this.runtimes.get(vaultId)?.drain() ?? Promise.resolve()),
+      );
       await apply();
     } finally {
       for (const agent of affected) {
@@ -457,15 +459,14 @@ export function changedAgents(before: Membership, after: Membership, known: stri
   );
 }
 
+const STATE_MESSAGES: Record<Exclude<StoreState, "ready">, string> = {
+  unprovisioned: "This store is created on first authorized use.",
+  initializing: "This store is being created.",
+  unavailable:
+    "This store couldn't be opened; its files or database are missing. Recovery review is required.",
+  "recovery-required": "The Knowledge store registry needs recovery review.",
+};
+
 function stateMessage(state: Exclude<StoreState, "ready">) {
-  switch (state) {
-    case "unprovisioned":
-      return "This store is created on first authorized use.";
-    case "initializing":
-      return "This store is being created.";
-    case "unavailable":
-      return "This store couldn't be opened; its files or database are missing. Recovery review is required.";
-    case "recovery-required":
-      return "The Knowledge store registry needs recovery review.";
-  }
+  return STATE_MESSAGES[state];
 }

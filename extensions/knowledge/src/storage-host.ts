@@ -126,7 +126,7 @@ export const operations = {
     s.run(a, async (vault) => {
       const data = await vault.scan();
       const r = eligible(data, undefined, false).find(
-        (r) => r.id === input.id && r.lifecycle === "active",
+        (record) => record.id === input.id && record.lifecycle === "active",
       );
       if (!r) {
         return { status: "not_found" as const };

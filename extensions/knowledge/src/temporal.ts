@@ -9,7 +9,7 @@ export function validSourceDate(value: string): boolean {
   if (!match || !Number.isFinite(Date.parse(value))) {
     return false;
   }
-  if (new Date(match[1]).toISOString().slice(0, 10) !== match[1]) {
+  if (new Date(match[1]!).toISOString().slice(0, 10) !== match[1]) {
     return false;
   }
   if (!match[2]) {
@@ -19,7 +19,7 @@ export function validSourceDate(value: string): boolean {
     return false;
   }
   return (
-    match[5] === "Z" || (Number(match[5].slice(1, 3)) <= 23 && Number(match[5].slice(4)) <= 59)
+    match[5] === "Z" || (Number(match[5]!.slice(1, 3)) <= 23 && Number(match[5]!.slice(4)) <= 59)
   );
 }
 export function temporalProblems(m: Envelope): string[] {

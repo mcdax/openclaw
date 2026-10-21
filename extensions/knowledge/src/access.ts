@@ -42,8 +42,9 @@ export function featurePrincipal(
   return () => {
     if (context.source === "session-action") {
       const { client, sessionKey } = context.action;
-      if (!operatorRead || !client?.connId || !client.scopes.some((s) => OPERATOR_READ.has(s)))
+      if (!operatorRead || !client?.connId || !client.scopes.some((s) => OPERATOR_READ.has(s))) {
         throw denied();
+      }
       if (write && !client.scopes.some((s) => OPERATOR_WRITE.has(s))) {
         throw denied();
       }
@@ -53,7 +54,7 @@ export function featurePrincipal(
         throw denied();
       }
       if (!operatorAgent) {
-        throw Error(
+        throw new Error(
           "Several agents are configured and none is the default; choose which agent's knowledge to view.",
         );
       }

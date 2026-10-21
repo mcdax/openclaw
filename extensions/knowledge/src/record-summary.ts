@@ -5,9 +5,9 @@ export const sourceCount = (evidence: Evidence[] = []) =>
 
 export function recordSummary({
   metadata,
-  body,
-  raw,
-  hash,
+  body: _body,
+  raw: _raw,
+  hash: _hash,
   redirected: _redirected,
   ...base
 }: LoadedRecord) {

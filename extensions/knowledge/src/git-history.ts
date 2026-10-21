@@ -4,6 +4,9 @@ import path from "node:path";
 import { inspectEvidence, withEvidenceFile } from "./evidence-files.js";
 import { PublicationFiles } from "./publication-files.js";
 
+// Backslash or any C0 control character.
+const UNSAFE_PATH_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);
+
 export type GitChange = { path: string; raw: string | null; fileHash?: string };
 export type GitBatch = { token: string; changes: GitChange[]; actor: string; at: string };
 export class GitUnavailable extends Error {}
@@ -96,7 +99,7 @@ export class GitHistory {
   }
   private repository() {
     this.command(["--version"]);
-    new PublicationFiles(this.root); // Reject redirected vault roots before Git touches them.
+    void new PublicationFiles(this.root); // Reject redirected vault roots before Git touches them.
     let stat: fs.Stats | undefined;
     try {
       stat = fs.lstatSync(this.gitDir);
@@ -299,7 +302,7 @@ export class GitHistory {
             (p) =>
               !p ||
               [".", "..", ".git", ".knowledge-history"].includes(p.toLowerCase()) ||
-              /[\\\x00-\x1f]/.test(p),
+              UNSAFE_PATH_CHARACTER.test(p),
           )
       ) {
         throw new Error("Unsafe Git content path.");

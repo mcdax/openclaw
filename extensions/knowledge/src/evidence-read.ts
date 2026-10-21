@@ -7,7 +7,7 @@ import type { Evidence, LoadedRecord } from "./model.js";
 
 type Position = { binding: string; start: number; end: number | null; offset: number };
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
-const encode = (position: Position) => Buffer.from(JSON.stringify(position)).toString("base64url");
+const encode = (cursor: Position) => Buffer.from(JSON.stringify(cursor)).toString("base64url");
 
 // Cursors select positions only: authority always comes from the current record and scope.
 function position(root: string, input: EvidenceReadInput): Position {
@@ -54,7 +54,7 @@ export function readEvidence(
   if (
     evidence.start_line === undefined &&
     evidence.end_line === undefined &&
-    !/^text\//.test(evidence.mediaType ?? "") &&
+    !(evidence.mediaType ?? "").startsWith("text/") &&
     !/(?:json|xml|yaml|javascript)/.test(evidence.mediaType ?? "") &&
     !/\.(txt|md|csv|json|jsonl|ya?ml|log|xml|html|ts|js)$/i.test(evidence.filename ?? evidence.path)
   ) {
@@ -80,11 +80,11 @@ export function readEvidence(
       }
       total += part.length;
     };
-    const consume = (value: string, final = false) => {
-      if (value.includes("\u0000")) {
+    const consume = (decoded: string, final = false) => {
+      if (decoded.includes("\u0000")) {
         throw new Error("Source contains binary data; use knowledge_attachment.");
       }
-      value = pendingCR + value;
+      let value = pendingCR + decoded;
       pendingCR = "";
       if (!final && value.endsWith("\r")) {
         pendingCR = "\r";
@@ -92,7 +92,7 @@ export function readEvidence(
       }
       const parts = value.replace(/\r\n/g, "\n").split("\n");
       for (let i = 0; i < parts.length; i++) {
-        collect(parts[i]);
+        collect(parts[i]!);
         if (i < parts.length - 1) {
           if (p.end === null || line < p.end) {
             collect("\n");
@@ -122,7 +122,7 @@ export function readEvidence(
     if (p.start > line || (p.end !== null && p.end > line) || p.offset > total) {
       throw new Error("Evidence range or cursor exceeds source text.");
     }
-    if (text.length && /[\uDC00-\uDFFF]/.test(text[0])) {
+    if (text.length && /[\uDC00-\uDFFF]/.test(text[0]!)) {
       throw new Error("Evidence cursor splits a Unicode character.");
     }
     text = text.slice(0, limit);

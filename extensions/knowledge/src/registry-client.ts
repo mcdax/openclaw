@@ -31,7 +31,7 @@ export class RegistryClient {
     const value = await new Promise<unknown>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       worker.ref();
-      worker.postMessage({ id, op, args } satisfies RegistryRequest, worker.location.origin);
+      worker.postMessage({ id, op, args } satisfies RegistryRequest, []);
     });
     if (value && typeof value === "object" && "bindings" in value && "stores" in value) {
       this.current = value as RegistrySnapshot;

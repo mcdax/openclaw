@@ -72,7 +72,7 @@ export class StorageClient {
           agentId: access.agentId,
           activity: access.activity,
         } satisfies HostMessage,
-        worker.location.origin,
+        [],
       );
     });
   }

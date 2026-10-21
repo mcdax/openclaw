@@ -80,16 +80,15 @@ export function chronicle(
   db: DatabaseSync,
   data: Snapshot,
   binding: string,
-  input: TimelineInput,
+  requested: TimelineInput,
   withdrawn = new Set<string>(),
   onDay?: DayInput,
 ): ChronicleOutput {
-  const records = eligible(data, withdrawn, input.eligibility === "include_inactive");
+  const records = eligible(data, withdrawn, requested.eligibility === "include_inactive");
   // An entity filter naming a merged page asks about the page it was merged into.
-  const merged = mergeRedirects(data.records).get(input.entity ?? "");
-  if (merged && !withdrawn.has(input.entity!)) {
-    input = { ...input, entity: merged };
-  }
+  const merged = mergeRedirects(data.records).get(requested.entity ?? "");
+  const input =
+    merged && !withdrawn.has(requested.entity!) ? { ...requested, entity: merged } : requested;
   const byId = new Map(records.map((r) => [r.id, r])),
     visible = new Set(byId.keys());
   const predicate = onDay ? dayPredicate(onDay) : undefined;

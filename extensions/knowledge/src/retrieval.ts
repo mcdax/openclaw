@@ -123,7 +123,7 @@ function hit(
   }
   const bodyStart = r.raw.length - r.body.length;
   const line = (offset: number) => r.raw.slice(0, bodyStart + offset).split("\n").length;
-  const { metadata, body, raw, hash, ...record } = r;
+  const { metadata, body: _body, raw: _raw, hash, ...record } = r;
   return {
     record,
     citation: { id: r.id, path: r.path, revision: r.revision, hash },
@@ -142,12 +142,13 @@ function hit(
     assertionOrigin: metadata.assertion_origin ?? "",
     evidence: (metadata.evidence ?? [])
       .slice(0, 3)
-      .map(({ path, sha256, start_line, end_line }) => ({
-        path,
-        sha256,
-        ...(start_line !== undefined ? { start_line } : {}),
-        ...(end_line !== undefined ? { end_line } : {}),
-      })),
+      .map(({ path, sha256, start_line, end_line }) =>
+        Object.assign(
+          { path, sha256 },
+          start_line !== undefined ? { start_line } : {},
+          end_line !== undefined ? { end_line } : {},
+        ),
+      ),
     evidenceTruncated: (metadata.evidence?.length ?? 0) > 3,
   };
 }

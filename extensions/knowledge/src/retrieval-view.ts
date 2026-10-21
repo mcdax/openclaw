@@ -35,7 +35,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, classN
 function button(label: string, run: () => void) {
   const b = el("button", label);
   b.type = "button";
-  b.onclick = run;
+  b.addEventListener("click", run);
   return b;
 }
 export function searchToolbar(
@@ -55,10 +55,10 @@ export function searchToolbar(
     state.snapshot = undefined;
     changed();
   };
-  input.oninput = () => {
+  input.addEventListener("input", () => {
     state.query = input.value;
     reset();
-  };
+  });
   form.append(input);
   function select<K extends "mode" | "kind" | "lifecycle">(
     key: K,
@@ -74,10 +74,10 @@ export function searchToolbar(
       node.append(option);
     }
     node.value = state[key];
-    node.onchange = () => {
+    node.addEventListener("change", () => {
       state[key] = node.value as SearchState[K];
       reset();
-    };
+    });
     wrapper.append(node);
     form.append(wrapper);
   }
@@ -107,20 +107,20 @@ export function searchToolbar(
     field.placeholder = placeholder;
     field.maxLength = key === "type" ? 64 : 200;
     field.setAttribute("aria-label", placeholder);
-    field.oninput = () => {
+    field.addEventListener("input", () => {
       state[key] = field.value.trim();
       reset();
-    };
+    });
     form.append(field);
   }
   const submit = el("button", "Search");
   submit.type = "submit";
   form.append(submit);
-  form.onsubmit = (event) => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
     reset();
     load();
-  };
+  });
   return form;
 }
 export async function loadSearch(

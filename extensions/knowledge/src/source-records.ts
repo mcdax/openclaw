@@ -13,6 +13,9 @@ import {
   SOURCE_DESCRIPTOR_MAX_BYTES,
 } from "./source-descriptors.js";
 
+// Backslash or any C0 control character.
+const UNSAFE_NAME_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);
+
 /** Stamp a descriptor only through guarded scope-local parent directories. */
 export function sourceDescriptorStamp(root: string, relative: string): string {
   return sourceDescriptorStamper(root)(relative);
@@ -38,7 +41,7 @@ export function sourceDescriptorStamper(root: string): (relative: string) => str
       guarded.set(parent, safe);
     }
     const name = relative.slice(parent.length);
-    if (!safe || !name || name === "." || name === ".." || /[\\\x00-\x1f]/.test(name)) {
+    if (!safe || !name || name === "." || name === ".." || UNSAFE_NAME_CHARACTER.test(name)) {
       return "error:unsafe-or-missing-descriptor";
     }
     return fileStamp(root, relative);
@@ -115,8 +118,8 @@ export function encodeRecordEvidence(
   if (!match) {
     throw new Error("Expected closed frontmatter.");
   }
-  const doc = parseDocument(match[1]);
-  const previous = parseYaml(match[1]) as Record<string, unknown>;
+  const doc = parseDocument(match[1]!);
+  const previous = parseYaml(match[1]!) as Record<string, unknown>;
   for (const key of ["evidence", "attribution_confidence", "identity", "continuity"]) {
     if (
       stored[key] !== undefined &&

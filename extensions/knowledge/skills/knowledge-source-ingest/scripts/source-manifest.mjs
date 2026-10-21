@@ -85,7 +85,7 @@ function payloadFor(row) {
   if (row.data !== undefined) {
     return row.data;
   }
-  const { id, sha256, occurred_at, ...payload } = row;
+  const { id: _id, sha256: _sha256, occurred_at: _occurredAt, ...payload } = row;
   return payload;
 }
 async function writeManifest(filename, header, database) {
@@ -108,9 +108,11 @@ async function writeManifest(filename, header, database) {
   }
   const sink = gzip ?? meter;
   const write = (text) =>
-    new Promise((resolve, reject) =>
-      sink.write(text, (error) => (error ? reject(error) : resolve())),
-    );
+    new Promise((resolve, reject) => {
+      sink.write(text, (/** @type {Error | null | undefined} */ error) =>
+        error ? reject(error) : resolve(),
+      );
+    });
   await write(JSON.stringify(header) + "\n");
   for (const row of database
     .prepare("SELECT id,sha256,occurred_at FROM items ORDER BY id")

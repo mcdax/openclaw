@@ -58,8 +58,8 @@ export function foldTimeline(root: HTMLElement) {
     for (const list of rest) {
       list.remove();
     }
-    first.replaceChildren(...order.slice(0, RECENT_TIMELINE_ENTRIES).map((entry) => entry.item));
-    let anchor: Element = first,
+    first!.replaceChildren(...order.slice(0, RECENT_TIMELINE_ENTRIES).map((entry) => entry.item));
+    let anchor: Element = first!,
       group: HTMLUListElement | undefined,
       groupKey = "";
     for (const { item, date } of order.slice(RECENT_TIMELINE_ENTRIES)) {
@@ -83,7 +83,7 @@ export function foldTimeline(root: HTMLElement) {
         date = entryDate(sample),
         count = list.children.length;
       details.querySelector("summary")!.textContent =
-        `${dated && date ? monthLabel(date[1], date[2]) : "Earlier"} · ${count} ${count === 1 ? "entry" : "entries"}`;
+        `${dated && date ? monthLabel(date[1]!, date[2]!) : "Earlier"} · ${count} ${count === 1 ? "entry" : "entries"}`;
     }
   }
   return root;

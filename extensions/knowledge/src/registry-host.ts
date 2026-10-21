@@ -32,7 +32,7 @@ export function serveRegistry(port: MessagePort, stateRoot: string) {
   port.on("message", (request: RegistryRequest) => {
     try {
       if (!registry) {
-        throw failure;
+        throw failure!;
       }
       const run = registry[request.op] as (...args: unknown[]) => unknown;
       port.postMessage({

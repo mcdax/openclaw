@@ -177,7 +177,7 @@ export function evidenceView(
   // A lone citation needs no per-file heading; its excerpt line names the file.
   if (
     sources.size === 1 &&
-    [...sources.values()][0].count === 1 &&
+    [...sources.values()][0]!.count === 1 &&
     result.nextEvidenceOffset == null
   ) {
     root.classList.add("knowledge-evidence-single");
@@ -220,9 +220,9 @@ export function evidenceView(
         more.disabled = false;
       }
     };
-    more.onclick = () => {
+    more.addEventListener("click", () => {
       void loadMore();
-    };
+    });
     if (offset < expansion.count) {
       void loadMore();
     }
@@ -252,7 +252,7 @@ export function originalDownload(
   }
   status.className = "knowledge-download-status";
   status.setAttribute("role", "status");
-  download.onclick = async () => {
+  const downloadOriginal = async () => {
     download.disabled = true;
     let writer:
       | { write(bytes: Uint8Array): Promise<void>; close(): Promise<void>; abort(): Promise<void> }
@@ -316,6 +316,9 @@ export function originalDownload(
       download.disabled = !e.verified;
     }
   };
+  download.addEventListener("click", () => {
+    void downloadOriginal();
+  });
   return { download, status };
 }
 
@@ -330,22 +333,22 @@ function excerptQuote(text: string) {
     const row = el("span"),
       stamp = timestamp.exec(line);
     row.className = "knowledge-excerpt-line";
-    if (stamp && !Number.isNaN(Date.parse(stamp[1]))) {
+    if (stamp && !Number.isNaN(Date.parse(stamp[1]!))) {
       const at = el(
         "time",
-        new Date(stamp[1]).toLocaleTimeString(undefined, {
+        new Date(stamp[1]!).toLocaleTimeString(undefined, {
           hour: "numeric",
           minute: "2-digit",
           second: "2-digit",
         }),
       );
       at.className = "knowledge-excerpt-time";
-      at.dateTime = stamp[1];
+      at.dateTime = stamp[1]!;
       at.title = stamp[0].trim();
       row.append(at);
       const label = speakerLabel.exec(line.slice(stamp[0].length));
       if (label) {
-        const speaker = el("span", label[1].split(";")[0].trim());
+        const speaker = el("span", label[1]!.split(";")[0]!.trim());
         speaker.className = "knowledge-excerpt-speaker";
         speaker.title = label[0].trim();
         row.append(speaker, line.slice(stamp[0].length + label[0].length));

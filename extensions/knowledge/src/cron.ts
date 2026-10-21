@@ -62,7 +62,7 @@ export function parseCron(expr: string, timeZone: string): Cron {
     );
   }
   try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
+    void new Intl.DateTimeFormat("en-US", { timeZone });
   } catch {
     throw new Error(`Unknown time zone "${timeZone}".`);
   }
