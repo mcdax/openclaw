@@ -8,7 +8,7 @@ import {
 } from "openclaw/plugin-sdk/sqlite-worker-runtime";
 
 /** One additive schema step; `apply` brings the database from `version - 1` to `version`. */
-export type SchemaStep = { version: number; apply: (db: DatabaseSync) => void };
+type SchemaStep = { version: number; apply: (db: DatabaseSync) => void };
 /** Plugin-owned database schema: its steps and how to date a store written before stamping. */
 export type KnowledgeSchema = {
   store: "state" | "registry";
