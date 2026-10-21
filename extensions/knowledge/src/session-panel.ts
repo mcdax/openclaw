@@ -41,10 +41,6 @@ const operationLabel = (op: string, action: string) =>
   })[op] ?? (action === "write" ? "Changed" : "Read");
 
 export function registerSessionPanel(host: ControlUiHost) {
-  // Older hosts can still render the dedicated page; no private host fallbacks.
-  if (!host.ui.registerPanel) {
-    return () => {};
-  }
   const panel: ControlUiPanel = {
     id: "session-activity",
     label: "Knowledge",

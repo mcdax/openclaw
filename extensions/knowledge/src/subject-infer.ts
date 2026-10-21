@@ -1,6 +1,6 @@
 import type { LoadedRecord } from "./model.js";
 // Adapted from gbrain src/core/facts/subject-infer.ts and the strict arms of
-// src/core/entities/resolve.ts; see THIRD_PARTY_NOTICES.md and docs/WORKFLOWS.md.
+// src/core/entities/resolve.ts; see THIRD_PARTY_NOTICES.md.
 import { exactLookup } from "./retrieval.js";
 import { isCommonCapitalizedWord, nameCandidates } from "./subject-candidates.js";
 import type { SampleVault } from "./vault.js";

@@ -80,10 +80,10 @@ export function createKnowledgeService(
   api: OpenClawPluginApi,
   events?: FeatureEventEmitter<typeof contract>,
 ): Handlers {
-  if (!api.runtimeSource) {
-    throw new Error("Knowledge requires an OpenClaw host with runtime entrypoint metadata");
+  // Metadata-only registration has no runtime entry and never starts storage.
+  if (api.runtimeSource) {
+    locatePluginFiles(api.runtimeSource);
   }
-  locatePluginFiles(api.runtimeSource);
   const instanceId = randomUUID(),
     startedAt = new Date().toISOString();
   const policy = parsePolicy(api.pluginConfig);

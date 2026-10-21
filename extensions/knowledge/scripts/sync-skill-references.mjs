@@ -29,7 +29,7 @@ for (const name of (await readdir(root)).filter((entry) => entry.startsWith("kno
     if (check) {
       if ((await readFile(target, "utf8").catch(() => "")) !== content) {
         throw new Error(
-          `Stale skill reference: ${name}/references/${file}; run npm run skills:sync`,
+          `Stale skill reference: ${name}/references/${file}; run node extensions/knowledge/scripts/sync-skill-references.mjs`,
         );
       }
     } else {

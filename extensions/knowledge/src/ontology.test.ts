@@ -7,7 +7,8 @@ import { contract } from "./contract.js";
 import { inspectOntology } from "./inspection.js";
 import { parseOntology, resolveOntology, expandTypes, inferType } from "./ontology.js";
 import { useTestTempDirs, defaultOrder } from "./test-support.js";
-import { SampleVault, SAMPLE_ROOT, digest } from "./vault.js";
+import { sampleVaultRoot } from "./plugin-files.js";
+import { SampleVault, digest } from "./vault.js";
 
 const tempDirs = useTestTempDirs();
 const manifest = (name: any, definitions: any[] = [], extra = {}) => ({
@@ -50,7 +51,7 @@ function resolve(...manifests: any[]) {
 }
 async function fixture() {
   const root = tempDirs.make("knowledge-ontology-");
-  await cp(SAMPLE_ROOT, root, { recursive: true });
+  await cp(sampleVaultRoot(), root, { recursive: true });
   await mkdir(path.join(root, "notes"), { recursive: true });
 
   return { root, vault: new SampleVault(root) };

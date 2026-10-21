@@ -1,5 +1,5 @@
 // Adapted from gbrain src/core/context/entity-salience.ts (strong pass only);
-// see THIRD_PARTY_NOTICES.md and docs/WORKFLOWS.md.
+// see THIRD_PARTY_NOTICES.md.
 
 /** One capitalized name or @handle a claim's text may refer to. */
 export type NameCandidate = {

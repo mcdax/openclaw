@@ -1,5 +1,5 @@
 // Adapted from gbrain src/core/facts/relink.ts ("page" and "mention" tiers);
-// see THIRD_PARTY_NOTICES.md and docs/WORKFLOWS.md.
+// see THIRD_PARTY_NOTICES.md.
 import { createHash } from "node:crypto";
 import type { LoadedRecord } from "./model.js";
 import type { RelinkExample } from "./relink-contract.js";
