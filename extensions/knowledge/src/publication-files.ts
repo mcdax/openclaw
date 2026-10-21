@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import path from "node:path";
 import { RECORD_MAX_BYTES, AUXILIARY_MAX_BYTES } from "./limits.js";
+import { digest, MAX_ENTRIES } from "./scan-primitives.js";
 import { SOURCE_DESCRIPTOR_MAX_BYTES } from "./source-descriptors.js";
-import { digest, MAX_ENTRIES } from "./vault.js";
 
 // Backslash or any C0 control character.
 const UNSAFE_PATH_CHARACTER = new RegExp(String.raw`[\\\u0000-\u001f]`);

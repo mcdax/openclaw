@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import path from "node:path";
 import { Check } from "typebox/value";
@@ -23,16 +22,14 @@ import {
 } from "./ontology.js";
 import { sampleVaultRoot } from "./plugin-files.js";
 import { eligible } from "./retrieval.js";
+import { digest, MAX_ENTRIES } from "./scan-primitives.js";
 import {
   hydrateMetadata,
   readSourceDescriptor,
   sourceDescriptorStamper,
 } from "./source-records.js";
 import { temporalProblems } from "./temporal.js";
-/** Runaway guard, not a size budget: a partition this large is a pathological
- * tree (e.g. a misplaced checkout), not ordinary growth. */
-export const MAX_ENTRIES = 100_000;
-export const digest = (s: string) => createHash("sha256").update(s).digest("hex");
+export { digest, MAX_ENTRIES };
 function sameScope(a: unknown, b: Scope): boolean {
   if (!a || typeof a !== "object" || !Check(Envelope.properties.scope, a)) {
     return false;
