@@ -6,8 +6,8 @@ import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { SqliteIdentityStore } from "./identity-store.js";
-import { Publisher } from "./publisher.js";
 import { createKnowledgeService } from "./service.js";
+import { KnowledgeStorage } from "./storage.js";
 import { accessFor, apiFor, useTestTempDirs } from "./test-support.js";
 
 const tempDirs = useTestTempDirs();
@@ -268,7 +268,7 @@ for (const operation of ["create_claim", "create_relationship"]) {
     it(`${operation}: interrupted ${stage}, replacement retry and changed payload`, async () => {
       const f = await foundation(),
         input = operation === "create_claim" ? (f as any).claim() : (f as any).edge();
-      const publisher = new Publisher(f.config, f.store, (where) => {
+      const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
         if (where === stage) {
           throw new Error("crash");
         }
@@ -444,7 +444,7 @@ for (const target of ["reference", "evidence"]) {
       target === "reference" ? (f as any).pages.project.path : (f as any).evidence.path;
     const full = path.join(f.root, "private", relative),
       original = await readFile(full, "utf8");
-    const publisher = new Publisher(f.config, f.store, (stage) => {
+    const publisher = new KnowledgeStorage(f.config, f.store, (stage) => {
       if (stage === "before-accept") {
         writeFileSync(full, original + "\nExternal change");
       }

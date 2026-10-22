@@ -29,7 +29,7 @@ import {
   sourceDescriptorStamper,
 } from "./source-records.js";
 import { temporalProblems } from "./temporal.js";
-export { digest, MAX_ENTRIES };
+export { digest };
 function sameScope(a: unknown, b: Scope): boolean {
   if (!a || typeof a !== "object" || !Check(Envelope.properties.scope, a)) {
     return false;

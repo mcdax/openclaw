@@ -6,8 +6,8 @@ import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { SqliteIdentityStore } from "./identity-store.js";
-import { Publisher } from "./publisher.js";
 import { createKnowledgeService } from "./service.js";
+import { KnowledgeStorage } from "./storage.js";
 import { accessFor, apiFor, childEvalArgs, sourceModule, useTestTempDirs } from "./test-support.js";
 
 const tempDirs = useTestTempDirs();
@@ -164,7 +164,7 @@ for (const stage of [
   it(`interruption at ${stage} recovers once across restart`, async () => {
     const f = await fixture(),
       input = { ...draft(), source: { text: "Retained evidence", attribution: "Test original" } };
-    const publisher = new Publisher(f.config, f.store, (where) => {
+    const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
       if (where.startsWith(stage)) {
         throw new Error("simulated crash");
       }
@@ -186,7 +186,7 @@ it("external rewrite immediately before displacement retains editor and intended
     input = edit(r, { body: "Plugin proposal\n" });
   const originalRaw = (await f.service.record({ id: created.id, view: "raw" }, f.owner)).record!
     .raw;
-  const publisher = new Publisher(f.config, f.store, (where) => {
+  const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
     if (where === `before-displace:private/${r!.path}`) {
       writeFileSync(
         path.join(f.root, "private", r!.path),
@@ -217,7 +217,7 @@ it("new editor file between displacement and installation is never overwritten",
   const f = await fixture(),
     created = await f.service.save_page(draft(), f.owner);
   const r = (await f.service.record({ id: created.id }, f.owner)).record;
-  const publisher = new Publisher(f.config, f.store, (where) => {
+  const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
     if (where === `before-install:private/${r!.path}`) {
       writeFileSync(path.join(f.root, "private", r!.path), "New editor file");
     }
@@ -261,11 +261,11 @@ it("write authority, scope isolation, missing conversation creation and disabled
 async function childWrite(f: any, input: any, crashAt: any) {
   const { spawn } = await import("node:child_process");
   const source = `
-    const { Publisher } = await import(${JSON.stringify(sourceModule("publisher"))});
+    const { KnowledgeStorage } = await import(${JSON.stringify(sourceModule("storage"))});
     const { SqliteIdentityStore } = await import(${JSON.stringify(sourceModule("identity-store"))});
     let data=''; for await (const c of process.stdin) data+=c;
     const { config, input, crashAt } = JSON.parse(data);
-    const publisher = new Publisher(config,new SqliteIdentityStore(config.statePath), stage => { if(stage === crashAt) process.exit(77); });
+    const publisher = new KnowledgeStorage(config,new SqliteIdentityStore(config.statePath), stage => { if(stage === crashAt) process.exit(77); });
     try { console.log(JSON.stringify(await publisher.save(input,{scope:{visibility:'private'},agentId:'main',assertCurrent(){}},'agent'))); }
     catch(e) { console.error(e.message); process.exitCode=1; }
   `;
@@ -342,7 +342,7 @@ it("authority expires after acceptance: no new files; original scope can resume"
       }
     },
   };
-  const publisher = new Publisher(f.config, f.store, (where) => {
+  const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
     if (where === "after-accept") {
       current = false;
     }

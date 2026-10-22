@@ -5,8 +5,8 @@ import { Check } from "typebox/value";
 import { expect, it } from "vitest";
 import { contract } from "./contract.js";
 import { SqliteIdentityStore } from "./identity-store.js";
-import { Publisher } from "./publisher.js";
 import { createKnowledgeService } from "./service.js";
+import { KnowledgeStorage } from "./storage.js";
 import { accessFor, apiFor, useTestTempDirs, defaultOrder } from "./test-support.js";
 
 const tempDirs = useTestTempDirs();
@@ -342,7 +342,7 @@ for (const stage of [
       original = await f.service.create_claim((f as any).claim(), f.owner),
       input = correction(f, original);
     let written = 0;
-    const publisher = new Publisher(f.config, f.store, (where) => {
+    const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
       if (where.startsWith("after-link:private/claims/")) {
         written++;
       }
@@ -486,7 +486,7 @@ it("changed payload replay and concurrent edits preserve conflicts and proposed 
     input = correction(f, original);
   const file = path.join(f.root, "private", original.path),
     before = await readFile(file, "utf8");
-  const publisher = new Publisher(f.config, f.store, (where) => {
+  const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
     if (where === "after-accept") {
       throw new Error("crash");
     }
@@ -508,7 +508,7 @@ for (const stage of ["after-accept", "after-link:vault.json", "before-receipt"])
     const f = await foundation(),
       original = await f.service.create_claim((f as any).claim(), f.owner),
       input = withdrawal(original);
-    const publisher = new Publisher(f.config, f.store, (where) => {
+    const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
       if (where === stage) {
         throw new Error("crash");
       }
@@ -557,7 +557,7 @@ it("lifecycle writes recheck current authority before publishing accepted intent
   const f = await foundation(),
     original = await f.service.create_claim((f as any).claim(), f.owner),
     input = correction(f, original);
-  const publisher = new Publisher(f.config, f.store, (where) => {
+  const publisher = new KnowledgeStorage(f.config, f.store, (where) => {
     if (where === "after-accept") {
       f.setAudience({
         kind: "conversation",
