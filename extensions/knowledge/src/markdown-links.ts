@@ -41,9 +41,35 @@ export const markdown = new Marked({
 // copy records. Bounded, oldest first, so edits cannot grow it without limit.
 const extracted = new Map<string, string[]>();
 const EXTRACTED_MAX = 20_000;
+// JavaScriptCore (Bun, Safari) caps regexp backtracking memory and reports an
+// over-cap match as no match, without an error. marked's paragraph rule exceeds
+// that cap after about 49,000 lines in one block. marked then lexes the rest line
+// by line and reruns every block rule each time, so a large record takes hours.
+// Breaking long runs of non-blank lines keeps every block under the cap. Only
+// blocks already thousands of lines long are split, and their links stay the
+// same. A multi-line link label that crosses a break is the accepted loss.
+const LEX_RUN_MAX_LINES = 10_000;
+function boundBlockRuns(body: string): string {
+  const parts: string[] = [];
+  let run = 0,
+    kept = 0;
+  for (let start = 0; start < body.length;) {
+    const newline = body.indexOf("\n", start),
+      end = newline === -1 ? body.length : newline;
+    if (!body.slice(start, end).trim()) {
+      run = 0;
+    } else if (++run > LEX_RUN_MAX_LINES) {
+      parts.push(body.slice(kept, start), "\n");
+      kept = start;
+      run = 1;
+    }
+    start = end + 1;
+  }
+  return parts.length ? parts.join("") + body.slice(kept) : body;
+}
 export function extractLinks(body: string): string[] {
   // Generated backlinks must not recursively create their own backlinks.
-  const tokens = markdown.lexer(body).filter(
+  const tokens = markdown.lexer(boundBlockRuns(body)).filter(
     (() => {
       let generated = false;
       return (token: { type: string; raw: string }) => {

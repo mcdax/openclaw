@@ -47,6 +47,15 @@ it("backlink markers inside code do not suppress subsequent authored links", () 
     wikiHref("Alex"),
   ]);
 });
+it("links in one block longer than the regexp backtracking cap are still found", () => {
+  // About 120,000 lines without a blank line; JavaScriptCore stops matching one
+  // paragraph after roughly 49,000 lines.
+  const lines = "Capacity needle paragraph with Unicode é.\n".repeat(120_000);
+  expect(extractLinks(`[[Start]]\n${lines}see [end](end.md) and\n\`[[code]]\``)).toStrictEqual([
+    wikiHref("Start"),
+    "end.md",
+  ]);
+});
 it("current path, title, alias and old ID paths resolve; ambiguity never chooses an arbitrary target", () => {
   const alex = record("a", "Alex Rivera", "people/alex-rivera.md", "", { aliases: ["Alex"] }),
     other = record("b", "Blair", "people/blair.md");
