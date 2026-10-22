@@ -82,6 +82,7 @@
     "tools": [
       "knowledge_annotate",
       "knowledge_attach",
+      "knowledge_attach_file",
       "knowledge_attachment",
       "knowledge_chronicle_day",
       "knowledge_chronicle_last_seen",
