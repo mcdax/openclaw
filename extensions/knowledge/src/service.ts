@@ -7,6 +7,7 @@ import type {
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { Check } from "typebox/value";
 import { featurePrincipal, type VaultAccess } from "./access.js";
+import { attachWorkspaceFile } from "./attachment-file.js";
 import { SinceInput, LastSeenInput } from "./chronicle-contract.js";
 import { emptyChronicle } from "./chronicle.js";
 import { contract } from "./contract.js";
@@ -277,6 +278,12 @@ export function createKnowledgeService(
         })(input, context),
       recent: call("recent", false, () => ({ items: [], upperSequence: 0, nextBefore: null })),
       attach: call("attach", true),
+      attach_file: (input, context) =>
+        use(context, true, (runtime, access) =>
+          attachWorkspaceFile(input, context, access.assertCurrent, (chunk) =>
+            runtime.client.call("attach", access, chunk),
+          ),
+        ),
       attachment: call("attachment"),
       evidence_read: call("evidenceRead"),
       // Inside a host pre-compaction flush, a missing requestId is derived from

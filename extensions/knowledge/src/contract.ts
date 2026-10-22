@@ -2,6 +2,7 @@ import { defineFeatureContract } from "openclaw/plugin-sdk/feature-contract";
 import { Type } from "typebox";
 import {
   AttachInput,
+  AttachFileInput,
   AttachOutput,
   AttachmentInput,
   AttachmentOutput,
@@ -178,10 +179,18 @@ export const contract = defineFeatureContract({
     attach: {
       kind: "action",
       description:
-        "UPLOAD source bytes: use knowledge_attach (verb), not knowledge_attachment (read). Retain an original source file in the authorized vault scope. Generate a distinct lowercase UUID requestId per file, never a filename/source ID and never shared by different files. Send base64 chunks of up to 48 KiB decoded, sequential byte offsets, the same requestId/filename/attribution for all chunks, and final=true on the last chunk. Retry identical chunks after interruption. No total file-size or evidence-count cap. A complete receipt returns evidence to append via save_page.attachments. Uploading alone does not create a page. No local filesystem path is accepted.",
+        "Programmatic byte upload: prefer knowledge_attach_file for host-workspace originals. Otherwise chain authorized file-reading/encoding results directly into knowledge_attach; never regenerate, print or copy base64 through a model or child agent. This is upload, not knowledge_attachment (read). Retain an original source file in the authorized vault scope. Generate a distinct lowercase UUID requestId per file, never a filename/source ID and never shared by different files. Send base64 chunks of up to 48 KiB decoded, sequential byte offsets, the same requestId/filename/attribution for all chunks, and final=true on the last chunk. Retry identical chunks after interruption. No total file-size or evidence-count cap. A complete receipt returns evidence to append via save_page.attachments. Uploading alone does not create a page. No local filesystem path is accepted.",
       input: AttachInput,
       output: AttachOutput,
       tool: { name: "knowledge_attach", label: "Attach knowledge source file" },
+    },
+    attach_file: {
+      kind: "action",
+      description:
+        "Retain a host-workspace original without copying bytes through the model. Supply filePath within the host-selected workspace, observed sha256, fresh lowercase UUID requestId, filename and attribution; retain expectedVaultId from status. Streams bounded chunks internally and returns only the normal attachment receipt. Reuse identical arguments to resume/replay. Rejects aliases, workspace escapes and sandbox paths. For remote bytes use programmatic knowledge_attach, never model-generated base64. Upload alone does not publish a page; append returned evidence to save_page.attachments.",
+      input: AttachFileInput,
+      output: AttachOutput,
+      tool: { name: "knowledge_attach_file", label: "Attach workspace source file" },
     },
     evidence_read: {
       kind: "query",

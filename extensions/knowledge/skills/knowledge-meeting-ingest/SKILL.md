@@ -53,7 +53,9 @@ source_url: "..." # if supplied
 
 Retain source segment order/timestamps when present. A summary is two lossy
 layers removed (transcription + summarization).
-Retain the original export and transcript with `knowledge_attach`, then attach
+Retain the original export and transcript with `knowledge_attach_file` for
+host-workspace files, or programmatic `knowledge_attach` for remote bytes; follow
+the publication reference and never copy base64 through a model. Then attach
 returned evidence to the meeting page. Normalized text is a labeled derivative,
 not a replacement for the original. Inspect for captured credentials before
 retention; redact live secrets and label the redacted derivative honestly. Respect
@@ -72,6 +74,11 @@ Transcription is a host capability, not a Knowledge tool.
 For API acquisition, read [source acquisition](references/source-acquisition.md):
 verify date filters, follow every transcript cursor, and record coverage before
 normalizing. It includes the Granola endpoint/parameter reference.
+
+Report acquisition, retention and publication separately: for example,
+“9/16 originals retained; meeting page not yet published.” Use actual receipt
+counts, not elapsed-time estimates. Independent source analysis may proceed while
+transfer runs, but publication waits for complete evidence receipts.
 
 ### Phase 2: Split detection — one recording is not always one meeting
 

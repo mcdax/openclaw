@@ -21,6 +21,20 @@ claims and relationships require it.
 
 ## Upload and download
 
+For a file already acquired in the host-selected workspace, prefer
+`knowledge_attach_file`. Supply `filePath`, its observed SHA-256 as `sha256`, a
+fresh request UUID, filename, attribution, and the observed `expectedVaultId`.
+The plugin streams bounded chunks internally and returns only the attachment
+receipt; the model does not copy or generate encoded source bytes. Retry with
+the identical arguments after an interruption. The source must remain unchanged.
+
+This operation accepts only regular files within the active host workspace
+(`fsPolicy.root` when pinned), rejects symbolic links and hardlinks, and is not
+available for sandbox paths or operator actions. It does not grant arbitrary
+Gateway-file access. Remote and sandbox clients must chain authorized
+file-reading results directly into `knowledge_attach` programmatically, without
+printing or regenerating base64 through the model.
+
 `knowledge_attach` uploads bytes in sequential chunks of at most 48 KiB decoded,
 with a stable request UUID and unchanging filename, media type, and attribution.
 The chunk size bounds each call, not the file.
@@ -39,8 +53,8 @@ The chunk size bounds each call, not the file.
 decoded; follow `nextOffset`. Downloads require a matching reference and hash on
 a record in the authorized partition.
 
-No tool accepts an arbitrary host path. Symlinks, hardlinks, unsafe paths,
-non-regular files, and files that change while being read are rejected.
+No tool accepts an arbitrary host path. Retained-file reads reject symlinks,
+hardlinks, unsafe paths, non-regular files, and files that change while being read.
 Originals are hashed with streaming reads.
 
 PDFs and media are retained and downloadable. Knowledge does not extract text,

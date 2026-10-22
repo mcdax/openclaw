@@ -186,7 +186,7 @@ caller's authorized store and partition.
 | Find and read         | `knowledge_lookup`, `knowledge_grep`, `knowledge_records`, `knowledge_record`, `knowledge_connections`, `knowledge_evidence_read`                   |
 | Dates                 | `knowledge_timeline`, `knowledge_chronicle_day`, `knowledge_chronicle_since`, `knowledge_chronicle_last_seen`                                       |
 | Remember and author   | `knowledge_remember`, `knowledge_save_page`, `knowledge_edit_body`, `knowledge_create_claim`, `knowledge_create_relationship`, `knowledge_annotate` |
-| Evidence files        | `knowledge_attach`, `knowledge_attachment`, `knowledge_reconcile_evidence`                                                                          |
+| Evidence files        | `knowledge_attach_file`, `knowledge_attach`, `knowledge_attachment`, `knowledge_reconcile_evidence`                                                 |
 | Ingestion             | `knowledge_publish_batch`, `knowledge_verify`, `knowledge_source_check`                                                                             |
 | Lifecycle             | `knowledge_correct`, `knowledge_withdraw`, `knowledge_merge`, `knowledge_unmerge`, `knowledge_relink`                                               |
 | Automatic recall      | `knowledge_recall`                                                                                                                                  |

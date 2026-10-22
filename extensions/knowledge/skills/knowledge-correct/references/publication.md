@@ -43,7 +43,15 @@ match; full-record matching/ranking still apply. Read the record for context.
 
 ## Retain the source
 
-Use `knowledge_attach` with a fresh UUID request ID per original. Send exact bytes
+Prefer `knowledge_attach_file` for an original already acquired in the host workspace.
+Compute its SHA-256 with an authorized host tool and pass `filePath`, `sha256`,
+filename, attribution, optional mediaType, observed vault UUID and a fresh request
+UUID. The plugin streams the exact bytes internally and returns only a receipt.
+Paths are confined to the host-selected workspace; sandbox/remote files must use
+programmatic byte transfer instead. Do not reinterpret a remote path as a host path.
+
+For programmatic/remote clients, use `knowledge_attach` with a fresh UUID per
+original. Send exact bytes
 as base64 in sequential chunks of at most 49,152 decoded bytes, starting at
 `offset: 0`. Keep request ID, filename, mediaType, attribution and vault precondition
 unchanged; set `final: true` only on the last chunk (an empty file is one empty
@@ -53,9 +61,14 @@ Generate lowercase UUIDs with the host's UUID facility (for example,
 `crypto.randomUUID()`); filenames, provider note IDs and descriptive slugs are
 not request IDs. Different originals need different UUIDs, even in one meeting.
 
-Use available host file-reading/encoding facilities; do not manually invent
-base64 or pass a filesystem path to this tool. If those facilities are absent,
-report that original retention is blocked. For small inline user text,
+Never copy, regenerate or print base64 through model-visible output or
+model-authored tool arguments. With Code Mode, chain the authorized byte-reading
+tool result directly into `knowledge_attach` in the same program; emit only
+receipts, byte counts, hashes and errors. Do not delegate mechanical byte copying
+to a language-model child. Keep completed receipts in task working context and
+reuse them after interruption rather than uploading completed files again.
+If no authorized programmatic transfer is available, report original retention
+as blocked rather than generating encoded payloads. For small inline user text,
 `save_page.source: {text, attribution}` is also supported; pass the exact text.
 
 Only `state: complete` returns usable `evidence`. Supply that object in
@@ -72,7 +85,9 @@ reuse its receipt, and do not promise automatic garbage collection.
    `knowledge_lookup` only for already-known exact record IDs, full titles or
    declared aliases (fall back to grep on `missing`). Inspect records and bounded
    `knowledge_connections`. Do not confuse source identity with speaker identity.
-3. `knowledge_attach` uploads bytes; `knowledge_attachment` downloads them.
+3. `knowledge_attach_file` transfers a host-workspace original without model-visible
+   bytes; `knowledge_attach` uploads programmatic chunks and
+   `knowledge_attachment` downloads retained bytes.
 4. Prepare reconciled page/claim/relationship outputs, then
    `knowledge_publish_batch` for related records (up to 25, at most 1 MiB).
    Use the individual create/save tools for isolated writes or follow-on work.

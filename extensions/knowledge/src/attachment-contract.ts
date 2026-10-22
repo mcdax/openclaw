@@ -27,6 +27,15 @@ export const AttachInput = Type.Object(
   { additionalProperties: false },
 );
 export type AttachInput = Static<typeof AttachInput>;
+export const AttachFileInput = Type.Object(
+  {
+    ...Type.Omit(AttachInput, ["offset", "data", "final"]).properties,
+    filePath: Type.String({ minLength: 1, maxLength: 4096 }),
+    sha256: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+  },
+  { additionalProperties: false },
+);
+export type AttachFileInput = Static<typeof AttachFileInput>;
 export const AttachOutput = Type.Object(
   {
     requestId: uuid,
