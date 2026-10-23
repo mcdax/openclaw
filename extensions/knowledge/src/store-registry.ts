@@ -107,15 +107,16 @@ export class StoreRegistry {
       throw e;
     }
     const id = this.meta("registry_id")!;
-    if (existsSync(sentinel) && readFileSync(sentinel, "utf8").trim() !== id) {
+    // A missing sentinel is written and an empty one (interrupted creation) is
+    // completed; one naming another registry is refused.
+    if (writeOnce(sentinel, id + "\n")) {
+      fsyncDir(stateRoot);
+    }
+    if (readFileSync(sentinel, "utf8").trim() !== id) {
       this.db.close();
       throw new RegistryRecoveryRequired(
         "Knowledge store registry does not match this state directory; restore the original registry.sqlite.",
       );
-    }
-    if (!existsSync(sentinel)) {
-      writeOnce(sentinel, id + "\n");
-      fsyncDir(stateRoot);
     }
     // A conversion journals itself here first; until it completes, serving
     // could provision a second, empty store for the agent being converted.
@@ -496,7 +497,8 @@ function isFile(file: string) {
 // Create exactly once; an existing file is verified by the caller, never replaced.
 // An empty file is this call's own interrupted creation (a crash between create
 // and write), so it is completed rather than left for the caller to reject.
-function writeOnce(file: string, text: string) {
+// True when this call wrote the file.
+function writeOnce(file: string, text: string): boolean {
   let fd: number;
   try {
     fd = openSync(
@@ -511,7 +513,7 @@ function writeOnce(file: string, text: string) {
     }
     const existing = lstatSync(file);
     if (!existing.isFile() || existing.size !== 0) {
-      return;
+      return false;
     }
     fd = openSync(file, constants.O_WRONLY | constants.O_NOFOLLOW);
   }
@@ -521,6 +523,7 @@ function writeOnce(file: string, text: string) {
   } finally {
     closeSync(fd);
   }
+  return true;
 }
 function fsyncDir(dir: string) {
   const fd = openSync(dir, constants.O_RDONLY);

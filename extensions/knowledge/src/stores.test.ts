@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readdir, rename, access, mkdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Check } from "typebox/value";
 import { expect, it } from "vitest";
@@ -521,6 +521,20 @@ it("recovery keeps a shared store bound to its data even when other edits confli
     ),
   ).toStrictEqual(["Seed"]);
   expect((await f.storesDir()).length, "no empty replacement store").toBe(1);
+});
+
+it("an interrupted sentinel write is completed; a sentinel naming another registry is refused", async () => {
+  const f = await fixture();
+  await f.save("main", "Kept");
+  const sentinel = path.join(f.stateRoot, "registry.id");
+  const id = await readFile(sentinel, "utf8");
+  // Exclusive create succeeded, then the process died before writing the ID.
+  await writeFile(sentinel, "");
+  const restarted = createKnowledgeService(f.api);
+  expect((await restarted.records({}, f.as("main"))).total).toBe(1);
+  expect(await readFile(sentinel, "utf8")).toBe(id);
+  await writeFile(sentinel, "another-registry\n");
+  await expect(createKnowledgeService(f.api).records({}, f.as("main"))).rejects.toThrow(/registry/);
 });
 
 it("an emptied registry is recovery, never a fresh set of empty stores", async () => {
