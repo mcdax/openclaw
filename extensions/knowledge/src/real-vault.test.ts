@@ -179,7 +179,7 @@ it("host-resolved conversation calls are scoped; missing audience fails closed",
   expect((await f.service.status({}, nonowner)).scope).toBe(`conversation:${f.sessionId}`);
   const missing = { ...f.owner, tool: { ...f.owner.tool, memoryAudience: undefined } };
   await expect(f.service.records({}, missing)).rejects.toThrow(
-    /no host memory authority.*respawn it from the current parent session/,
+    /granted this session no memory audience.*"memory_audience_denied"/,
   );
 });
 
@@ -243,6 +243,27 @@ it("operator scopes are explicit, selectors cannot create conversation authority
   ]) {
     expect(Check(contract.operations.records.input, fields)).toBe(false);
   }
+});
+
+it("operator browsing honors the role's agent ceiling and needs an administrator on a shared Gateway", async () => {
+  const f = await fixture();
+  const withClient = (client: Record<string, unknown>) => ({
+    ...f.operator,
+    action: { client: { ...f.operator.action.client, ...client } },
+  });
+  await expect(f.service.records({}, withClient({ agents: ["other"] }))).rejects.toThrow(
+    /does not include agent "main"/,
+  );
+  await expect(f.service.records({}, withClient({ sharedGateway: true }))).rejects.toThrow(
+    /requires an administrator/,
+  );
+  const admin = withClient({
+    agents: ["main"],
+    sharedGateway: true,
+    scopes: ["operator.admin"],
+  });
+  expect((await f.service.records({}, admin)).total > 0).toBe(true);
+  expect((await f.service.records({}, withClient({ agents: ["main"] }))).total > 0).toBe(true);
 });
 
 it("empty conversation scope returns an empty catalog, without creating files or reading private ontology", async () => {

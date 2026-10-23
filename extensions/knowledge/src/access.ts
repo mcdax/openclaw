@@ -4,11 +4,12 @@ import type { Scope } from "./model.js";
 
 const denied = () =>
   new Error("Knowledge access unavailable: trusted agent/session authority is required.");
-// The host mints no audience when a session's lineage no longer verifies; the
-// common case is a subagent whose parent was reset, which only a respawn repairs.
+// The host mints no audience for several reasons (stale or ineligible lineage,
+// unverifiable storage). Only the Gateway log names which, so this message
+// points there without guessing a repair or naming other sessions.
 const noAudience = () =>
   new Error(
-    "Knowledge access unavailable: this session has no host memory authority. A subagent loses it when its parent session is reset or deleted after the spawn; respawn it from the current parent session. The Gateway log names the exact reason.",
+    'Knowledge access unavailable: the host granted this session no memory audience. The Gateway log entry "memory_audience_denied" for this session names the reason and its repair.',
   );
 /** A store partition: the store's private knowledge or one trusted conversation. */
 export type Partition = Exclude<Scope, { visibility: "sample" }>;
@@ -48,6 +49,14 @@ export function featurePrincipal(
       if (write && !client.scopes.some((s) => OPERATOR_WRITE.has(s))) {
         throw denied();
       }
+      // Operators browse an agent's private partition, which session turns
+      // reach only with the owner's audience. On a shared Gateway that is an
+      // administrator; a role's agent ceiling bounds every operator.
+      if (client.sharedGateway === true && !client.scopes.includes("operator.admin")) {
+        throw new Error(
+          "Knowledge access unavailable: on a shared Gateway, browsing an agent's private knowledge requires an administrator.",
+        );
+      }
       // Operators inspect an agent's private store; a session target would be
       // conversation impersonation.
       if (sessionKey) {
@@ -56,6 +65,11 @@ export function featurePrincipal(
       if (!operatorAgent) {
         throw new Error(
           "Several agents are configured and none is the default; choose which agent's knowledge to view.",
+        );
+      }
+      if (client.agents && !client.agents.includes(operatorAgent)) {
+        throw new Error(
+          `Knowledge access unavailable: your operator role does not include agent "${operatorAgent}".`,
         );
       }
       return { agentId: operatorAgent, scope: { visibility: "private" } };

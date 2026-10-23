@@ -86,7 +86,9 @@ it("operator authorization and missing, foreign, host, and sandbox audience reje
     { ...f.context.authority, audience: undefined },
     { ...f.context.authority, audience: { kind: "owner-private", agentId: "other" } },
   ]) {
-    await expect((f.open as any)({ ...f.context, authority })).rejects.toThrow(/authority/);
+    await expect((f.open as any)({ ...f.context, authority })).rejects.toThrow(
+      /authority|memory audience/,
+    );
   }
   await expect((f.open as any)(f.context, "other")).rejects.toThrow(/authority/);
   await expect((f.open as any)({ ...f.context, assertCurrent: undefined })).rejects.toThrow(

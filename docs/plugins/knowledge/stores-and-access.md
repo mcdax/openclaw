@@ -149,14 +149,19 @@ keeps each revision's author.
 
 ## Caller authority
 
-| Caller                                             | Required trusted evidence                                                                      | Scope                                                                                         |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Control UI or operator RPC                         | Authenticated connection, host `operator.read` (or write/admin), and `operatorRead: true`      | Private partition of the default agent's store, or of an agent selected in the Knowledge page |
-| Operator changing assignments                      | `operator.admin`                                                                               | Store membership only; never knowledge edits                                                  |
-| Agent, owner-private audience                      | Host-minted `owner-private` memory audience and current invocation guard                       | Private partition of that agent's store                                                       |
-| Agent, conversation audience                       | Host-minted `conversation` memory audience with its session key and UUID, and invocation guard | That session's conversation partition in the agent's store                                    |
-| Spawned child                                      | Root audience validated and delegated by the host                                              | Same partition as the originating root                                                        |
-| Missing or stale audience, sandboxed provider call | Insufficient authority                                                                         | Denied                                                                                        |
+| Caller                                             | Required trusted evidence                                                                                                                                           | Scope                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Control UI or operator RPC                         | Authenticated connection, host `operator.read` (or write/admin), `operatorRead: true`, the agent within the caller's role, and `operator.admin` on a shared Gateway | Private partition of the default agent's store, or of an agent selected in the Knowledge page |
+| Operator changing assignments                      | `operator.admin`                                                                                                                                                    | Store membership only; never knowledge edits                                                  |
+| Agent, owner-private audience                      | Host-minted `owner-private` memory audience and current invocation guard                                                                                            | Private partition of that agent's store                                                       |
+| Agent, conversation audience                       | Host-minted `conversation` memory audience with its session key and UUID, and invocation guard                                                                      | That session's conversation partition in the agent's store                                    |
+| Spawned child                                      | Root audience validated and delegated by the host                                                                                                                   | Same partition as the originating root                                                        |
+| Missing or stale audience, sandboxed provider call | Insufficient authority                                                                                                                                              | Denied                                                                                        |
+
+Operator browsing reads an agent's private partition. A named operator role
+limits it to the role's agents. When several people share the Gateway, it also
+requires `operator.admin`, the same owner status that gives session turns the
+owner-private audience.
 
 OpenClaw resolves direct-owner, conversation, and spawn inheritance and supplies
 the resulting audience. Knowledge does not read session entries, inspect chat

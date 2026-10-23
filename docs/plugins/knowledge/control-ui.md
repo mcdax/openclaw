@@ -36,7 +36,9 @@ Open **Knowledge** from the Control UI sidebar.
 | Vault status     | Store identity and status for the selected agent                                                                                   |
 | Maintenance      | Schedule, next and last run, and per-store results                                                                                 |
 
-Operator access needs `operator.read` (or higher) and `operatorRead: true`.
+Operator access needs `operator.read` (or higher) and `operatorRead: true`. A
+named operator role limits browsing to its agents, and a Gateway shared by
+several people requires `operator.admin`.
 Store membership changes need `operator.admin`. The page shows only private
 partitions; conversation partitions are not browsable.
 
