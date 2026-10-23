@@ -230,6 +230,8 @@ export const Envelope = Type.Object(
     due_at: Type.Optional(Type.String({ maxLength: 40 })),
     attribution: Type.Optional(text(1000)),
     entities: Type.Optional(Type.Array(id, { maxItems: 100 })),
+    /** Saver's free-text description of a claim's subject; maintenance uses it to link the claim. */
+    subject_hint: Type.Optional(text(200)),
     // Preserve malformed authored blocks for diagnostics while automatic recall validates separately.
     recall: Type.Optional(Type.Unknown()),
     from: Type.Optional(id),

@@ -264,6 +264,29 @@ function isNonName(query: string): boolean {
 }
 
 /**
+ * Resolve a saver's free-text subject hint ("bundled plugin hot reload, PR #180466").
+ * The whole hint, then each comma- or semicolon-separated part, is tried as an
+ * exact page name; it links only when those parts name exactly one entity page
+ * and none is ambiguous. Otherwise the hint is read like claim text.
+ */
+export function resolveHint(data: Snapshot, hint: string, withdrawn: Set<string>): InferResult {
+  const parts = [hint, ...hint.split(/[,;]/u)].map((p) => p.trim()).filter(Boolean);
+  const found = new Set<string>();
+  for (const part of new Set(parts)) {
+    const r = resolveStrict(data, part, withdrawn);
+    if (r.id !== null) {
+      found.add(r.id);
+    } else if (r.miss === "ambiguous") {
+      return { id: null, reason: "ambiguous" };
+    }
+  }
+  if (found.size === 1) {
+    return { id: [...found][0]! };
+  }
+  return found.size > 1 ? { id: null, reason: "ambiguous" } : inferSubject(data, hint, withdrawn);
+}
+
+/**
  * Name the page a claim is about from its own text: exactly one current
  * entity page must be named (by ID, title or alias) and no other real name may
  * compete, even one with no page ("Nimbus copied Atlas's pricing" names two

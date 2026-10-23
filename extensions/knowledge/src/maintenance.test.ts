@@ -220,3 +220,78 @@ it("disabled maintenance, invalid schedules and write-disabled installs schedule
     expect(status.configError ?? "").toMatch(expected as any);
   }
 });
+
+it("a pass that leaves private claims unlinked queues the review automation once, and only then", async () => {
+  const base = tempDirs.make("knowledge-maintenance-review-");
+  const host = hostApi(base, {
+    policy: {
+      writesEnabled: true,
+      operatorRead: true,
+      maintenance: { schedule: "0 * * * *", timezone: "UTC", reviewJobId: "review-job" },
+    },
+  });
+  const own = await createVault(base, { name: "own" });
+  adopt(host.stateRoot, "agent:main", own.config);
+  const lifecycles: any = [];
+  host.api.registerService = (s) => lifecycles.push(s);
+  host.api.logger = { info() {}, warn() {} } as any;
+  const service = createKnowledgeService(host.api),
+    scheduler = fakeScheduler(Date.parse("2026-10-22T10:20:00Z"));
+  const calls: any[] = [];
+  let answer: any = { ok: true, enqueued: true, runId: "run-1" },
+    cron: any = {
+      enqueueRun: async (id: any, mode: any) => {
+        calls.push([id, mode]);
+        return answer;
+      },
+    };
+  await lifecycles[0].start({ scheduler, getCron: () => cron });
+  afterTest(() => lifecycles[0].stop());
+  const main = toolContext(host.api, "main");
+  const review = async () => {
+    await scheduler.fire("knowledge-maintenance");
+    return (await service.maintenance_status({}, operatorContext(host.api))).lastRun!.review;
+  };
+
+  const linkable = (await remember(service, main, "Atlas Labs moved its launch to March.")).items[0]
+    .id;
+  await remember(service, main, "I prefer short replies.");
+  await page(service, main, "Atlas Labs");
+  expect(await review(), "Relink links Atlas; the preference is left for review").toStrictEqual({
+    jobId: "review-job",
+    pending: 1,
+    outcome: "enqueued",
+    runId: "run-1",
+  });
+  expect(calls).toStrictEqual([["review-job", "if-enabled"]]);
+  expect((await service.record({ id: linkable }, main)).record).toBeTruthy();
+
+  answer = { ok: true, ran: false, reason: "disabled" };
+  expect((await review())!.outcome, "A disabled automation is reported, not forced").toBe(
+    "skipped",
+  );
+  cron = undefined;
+  expect((await review())!.outcome).toBe("unavailable");
+
+  // Once the review has linked everything, the pass does not queue it.
+  const left = (await service.relink({ dryRun: true }, main)).examples[0].id;
+  const record = (await service.record({ id: left }, main)).record!;
+  const prefs = await page(service, main, "Reply style", "concept");
+  await service.annotate(
+    {
+      requestId: randomUUID(),
+      id: left,
+      expectedRevision: record.revision,
+      expectedHash: record.hash,
+      reason: "Reviewed.",
+      annotations: {},
+      entities: [prefs.id],
+    },
+    main,
+  );
+  cron = { enqueueRun: async () => expect.unreachable("nothing to review") };
+  expect(await review()).toStrictEqual({ jobId: "review-job", pending: 0, outcome: "not_needed" });
+  const status = await service.maintenance_status({}, operatorContext(host.api));
+  expect(Check(contract.operations.maintenance_status.output, status)).toBeTruthy();
+  expect(status.reviewJobId).toBe("review-job");
+});

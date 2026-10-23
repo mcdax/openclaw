@@ -119,8 +119,12 @@ matches (`snippet.matchLocated: false`). Open the record to inspect content.
 `knowledge_remember` is the cheap path for discrete claims from a conversation.
 One call takes a short `attribution`, the supporting conversation `excerpt` (at
 most 16 KiB), and 1–20 `items`. Each item has `text`, a claim `kind`, an
-optional `subject`, an `origin` of `source` (default) or `user_belief`, and
-optional dates. Agent inference is rejected.
+optional `subject`, an optional `about`, an `origin` of `source` (default) or
+`user_belief`, and optional dates. Agent inference is rejected.
+
+`about` is the saver's own description of what the claim concerns, such as
+`"bundled plugin hot reload, PR #180466"`. It needs no lookup and does not have
+to match a page. It is stored on the claim as `subject_hint`.
 
 ```json
 {
@@ -142,7 +146,9 @@ The server:
 1. Resolves each subject by exact lookup (page ID, title, or alias; active pages;
    merge redirects followed). A unique match links the claim. An ambiguous or
    missing subject saves it unlinked and reports `ambiguous` or `missing`.
-2. Infers an omitted subject when the text names exactly one entity page (person,
+2. Infers an omitted subject from `about`, then the text: the whole hint or one of
+   its comma- or semicolon-separated parts may name the page exactly. Otherwise
+   the hint or the text must name exactly one entity page (person,
    company, concept, project, or deal) and no other name competes. Sentence
    openers, role terms, and bare first names are not guessed. `infer_subject:
    false` turns this off for one item.

@@ -24,6 +24,7 @@ retained `knowledge_remember` excerpt. Claims are processed in stable ID order:
 | Outcome                    | Rule                                                                                         |
 | -------------------------- | -------------------------------------------------------------------------------------------- |
 | `linked` (tier `page`)     | The claim's `source_page` is an active entity page.                                          |
+| `linked` (tier `hint`)     | The claim's `subject_hint` names exactly one entity page.                                    |
 | `linked` (tier `mention`)  | The claim text names exactly one entity page by ID, title, or alias, with no competing name. |
 | `ambiguous` / `no_subject` | Anything else. The claim stays unlinked.                                                     |
 
@@ -95,6 +96,21 @@ Each pass logs one summary line, as a warning if any store failed.
 Relink adapts the free `page` and `mention` tiers of gbrain's relink. It has no
 model tier: a claim that cannot be resolved stays unlinked rather than receiving
 an unsupported guess.
+
+## Agent review
+
+Relink leaves claims that name no page, or more than one. An operator can hand
+those to an agent: set `maintenance.reviewJobId` to an automation whose agent
+turn follows the `knowledge-unlinked-claims` skill. After a pass that leaves
+private remembered claims unlinked, maintenance queues that automation once. It
+does not queue it when nothing is left, and a disabled automation does not run.
+The last pass reports the review's outcome (`enqueued`, `not_needed`, `skipped`,
+`unavailable`, or `failed`) and how many claims were left.
+
+The review edits private knowledge, so the automation must run in a session
+with the owner's private access: a kept worker spawned from the owner's direct
+conversation. The skill's "Setting up the scheduled review" section gives the
+steps. Conversation partitions are not reviewed.
 
 The `knowledge-unlinked-claims` skill is the agent workflow for the claims relink
 leaves unlinked. It chooses subject pages with judgment, creates pages for

@@ -24,6 +24,14 @@ export const RememberItem = Type.Object(
           "Exact page ID, title or alias of what the claim is about. A unique match links the claim; otherwise it is saved unlinked. Omit it to infer the subject from a name in the text. Never creates a page.",
       }),
     ),
+    about: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: 200,
+        description:
+          'What the claim is about, in your own words from context (e.g. "bundled plugin hot reload, PR #180466"); no lookup needed. Stored with the claim and used to link it now or by later maintenance.',
+      }),
+    ),
     infer_subject: Type.Optional(
       Type.Boolean({
         description:

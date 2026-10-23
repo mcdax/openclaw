@@ -3,14 +3,14 @@
 import { createHash } from "node:crypto";
 import type { LoadedRecord } from "./model.js";
 import type { RelinkExample } from "./relink-contract.js";
-import { inferSubject, isFactEntity } from "./subject-infer.js";
+import { inferSubject, isFactEntity, resolveHint } from "./subject-infer.js";
 import type { SampleVault } from "./vault.js";
 
 type Snapshot = Awaited<ReturnType<SampleVault["scan"]>>;
 export type RelinkPlan = {
   record: LoadedRecord;
   outcome: RelinkExample["outcome"];
-  tier?: "page" | "mention";
+  tier?: "page" | "hint" | "mention";
   subject?: LoadedRecord;
   reason?: string;
 };
@@ -34,8 +34,9 @@ export function unlinkedRemembered(active: readonly LoadedRecord[]): LoadedRecor
 
 /**
  * Decide one claim's subject with zero model calls: its recorded source page
- * when that is an entity page, otherwise the one entity page its text names
- * with no competing name. Anything else stays unlinked; nothing is guessed.
+ * when that is an entity page, then the one entity page its saver's subject
+ * hint names, then the one entity page its text names with no competing name.
+ * Anything else stays unlinked; nothing is guessed.
  */
 export function planRelink(
   data: Snapshot,
@@ -50,6 +51,11 @@ export function planRelink(
   const source = page(record.metadata.source_page);
   if (source && isFactEntity(data, source)) {
     return { record, outcome: "linked", tier: "page", subject: source };
+  }
+  const hint = record.metadata.subject_hint;
+  const hinted = hint ? page(resolveHint(data, hint, withdrawn).id ?? undefined) : undefined;
+  if (hinted) {
+    return { record, outcome: "linked", tier: "hint", subject: hinted };
   }
   const inferred = inferSubject(data, record.body, withdrawn);
   const subject = page(inferred.id ?? undefined);

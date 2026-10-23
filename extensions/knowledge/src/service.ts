@@ -135,7 +135,7 @@ export function createKnowledgeService(
     async start(ctx) {
       stores.start();
       if (ctx?.scheduler) {
-        await maintenance.start(ctx.scheduler);
+        await maintenance.start(ctx.scheduler, ctx.getCron);
       }
     },
     stop() {

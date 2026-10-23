@@ -78,6 +78,7 @@ const CreateClaim = Type.Object(
     ...common,
     ...Type.Required(Type.Pick(Envelope, ["claim_kind", "assertion_origin"])).properties,
     entities: Envelope.properties.entities,
+    subject_hint: Envelope.properties.subject_hint,
     occurred_at: Envelope.properties.occurred_at,
     owner: Envelope.properties.owner,
     due_at: Envelope.properties.due_at,

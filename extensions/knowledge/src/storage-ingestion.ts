@@ -23,6 +23,13 @@ import { withdrawnIds, eligible } from "./retrieval.js";
 import { StorageLifecycle } from "./storage-lifecycle.js";
 import { canonical, scopeKey, type Prepared } from "./storage-types.js";
 import { digest } from "./vault.js";
+
+/** Why relink chose a subject, recorded as the annotation reason. */
+const RELINK_BASIS = {
+  page: "recorded source page",
+  hint: "page named by the saver's subject hint",
+  mention: "only entity named in the claim text",
+} as const;
 /** Multi-record ingestion: batches, remembered claims and subject relinking. */
 export class StorageIngestion extends StorageLifecycle {
   async batch(input: BatchInput, access: VaultAccess, actor: string): Promise<Receipt> {
@@ -390,7 +397,7 @@ export class StorageIngestion extends StorageLifecycle {
               id: plan.record.id,
               expectedRevision: plan.record.revision,
               expectedHash: plan.record.hash,
-              reason: `Relinked to ${plan.subject!.title} (${plan.tier === "page" ? "recorded source page" : "only entity named in the claim text"}).`,
+              reason: `Relinked to ${plan.subject!.title} (${RELINK_BASIS[plan.tier!]}).`,
               annotations: {},
               entities: [plan.subject!.id],
             },

@@ -291,7 +291,15 @@ export class StoragePublication extends StorageJournal {
         ? []
         : ["attribution", "evidence", "valid_from", "valid_until", "expires_at"]),
       ...(kind === "claim"
-        ? ["claim_kind", "assertion_origin", "entities", "occurred_at", "owner", "due_at"]
+        ? [
+            "claim_kind",
+            "assertion_origin",
+            "entities",
+            "subject_hint",
+            "occurred_at",
+            "owner",
+            "due_at",
+          ]
         : kind === "relationship"
           ? ["from", "to", "label"]
           : []),

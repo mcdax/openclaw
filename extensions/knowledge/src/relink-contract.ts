@@ -39,8 +39,10 @@ export const RelinkExample = Type.Object(
     id,
     title: text(200),
     outcome: Outcome,
-    /** page: the claim's recorded source page; mention: the one entity page its text names. */
-    tier: Type.Optional(Type.Union([Type.Literal("page"), Type.Literal("mention")])),
+    /** page: the claim's recorded source page; hint: the page its saver's subject hint names; mention: the one entity page its text names. */
+    tier: Type.Optional(
+      Type.Union([Type.Literal("page"), Type.Literal("hint"), Type.Literal("mention")]),
+    ),
     subject: Type.Optional(Type.Object({ id, title: text(200) }, { additionalProperties: false })),
     reason: Type.Optional(text(40)),
   },

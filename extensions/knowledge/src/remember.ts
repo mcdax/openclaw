@@ -2,7 +2,7 @@ import type { Evidence, LoadedRecord } from "./model.js";
 import type { ClaimInput } from "./mutation-contract.js";
 import type { RememberInput, RememberItem, RememberResult } from "./remember-contract.js";
 import { exactLookup } from "./retrieval.js";
-import { inferSubject } from "./subject-infer.js";
+import { inferSubject, resolveHint } from "./subject-infer.js";
 import type { SampleVault } from "./vault.js";
 
 type Snapshot = Awaited<ReturnType<SampleVault["scan"]>>;
@@ -21,8 +21,9 @@ const sameSet = (a: string[], b: string[]) =>
 
 /**
  * Resolve one item's subject. A named subject uses exact ID/title/alias
- * lookup and never guesses; an omitted one is inferred from the claim text
- * only when it names exactly one entity page and no competing name.
+ * lookup and never guesses; an omitted one is inferred from the `about` hint,
+ * then the claim text, only when it names exactly one entity page and no
+ * competing name.
  */
 function resolveSubject(data: Snapshot, item: RememberItem, withdrawn: Set<string>): Resolution {
   const subject = item.subject;
@@ -30,7 +31,8 @@ function resolveSubject(data: Snapshot, item: RememberItem, withdrawn: Set<strin
     if (item.infer_subject === false) {
       return { subject: "none" };
     }
-    const inferred = inferSubject(data, item.text, withdrawn);
+    const hinted = item.about ? resolveHint(data, item.about, withdrawn) : undefined;
+    const inferred = hinted?.id ? hinted : inferSubject(data, item.text, withdrawn);
     return inferred.id ? { subject: "inferred", subjectId: inferred.id } : { subject: "none" };
   }
   const found = exactLookup(data, { query: subject, kind: "page", limit: 10 }, withdrawn);
@@ -111,6 +113,7 @@ export function claimPayload(
     attribution,
     evidence: [evidence],
     ...(plan.subjectId ? { entities: [plan.subjectId] } : {}),
+    ...(item.about ? { subject_hint: item.about.trim() } : {}),
     ...(item.occurred_at ? { occurred_at: item.occurred_at } : {}),
     ...(item.due_at ? { due_at: item.due_at } : {}),
     ...(item.valid_from ? { valid_from: item.valid_from } : {}),

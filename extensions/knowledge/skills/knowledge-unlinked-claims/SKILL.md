@@ -25,7 +25,9 @@ and `no_subject` IDs. Anything reported as `linked` will be handled by the next
 maintenance pass; run `knowledge_relink` without `dryRun` first if it should be
 linked now.
 
-Read each claim with `knowledge_record`. Group the claims by what they are about
+Read each claim with `knowledge_record` and `metadataView: "full"`. Its
+`subject_hint`, when present, is the saver's own description of what the claim
+is about and the strongest clue to its subject. Group the claims by what they are about
 (one feature, PR, decision thread, person or preference) before choosing pages.
 Most claims make sense only next to their neighbours: a series of status
 snapshots about one PR usually ends in an outcome claim.
@@ -123,3 +125,47 @@ Report the number of claims examined and linked, pages created, claims withdrawn
 unlinked with the reason for each. When running unattended, never ask for a
 decision: leave uncertain identities, uncertain duplicates and pages you would
 only create on a guess untouched, and list them in the report for a person.
+
+## Running as the scheduled review
+
+Knowledge maintenance queues this review after its nightly relink pass when
+private remembered claims are still unlinked (`maintenance.reviewJobId`). The
+run is unattended:
+
+- First call `knowledge_status`. If the scope is not `private` or writes are
+  disabled, reply with `AUTOMATION_FAILED` on its own first line and the reason:
+  the worker has lost the owner's access and needs to be set up again.
+- Work through steps 1 to 6. Check the residue again before stopping, since
+  claims saved during the run are part of the same backlog.
+- With nothing to do, reply `NO_REPLY`. Otherwise reply with the step 6 report.
+
+## Setting up the scheduled review
+
+The review needs owner-private access, which only a session descended from the
+owner's direct conversation has. Set it up from that conversation:
+
+1. Spawn a kept worker: `sessions_spawn` with `runtime: "subagent"`,
+   `cleanup: "keep"` and `context: "isolated"`, whose task is to call
+   `knowledge_status` and report the scope. Continue only if it reports
+   `private` with writes enabled. Keep the returned session key.
+2. Create the automation bound to that worker. It needs a schedule, so give it
+   a one-shot date years away; maintenance runs it on demand.
+
+   ```bash
+   openclaw automations add --agent <agent> --name knowledge-unlinked-claims-review \
+     --session "session:<worker-session-key>" --at <date-years-ahead> --keep-after-run \
+     --model <provider/model> --no-deliver --timeout-seconds 3600 \
+     --message "Follow the knowledge-unlinked-claims skill as the scheduled review."
+   ```
+
+   The job records the inference account it was created with. Choose a model
+   that uses that account (a provider with an auth profile); otherwise every
+   run fails before the model is called.
+
+3. Set `plugins.entries.knowledge.config.maintenance.reviewJobId` to the job ID.
+4. Prove it: `openclaw automations run <job-id> --wait` must finish with the
+   worker reporting the private scope, and `maintenance_status` reports the
+   review outcome after the next pass.
+
+Disable the automation to pause the review. Resetting or removing the owner
+conversation the worker came from revokes its access; set the review up again.

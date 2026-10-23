@@ -215,3 +215,42 @@ it("relink treats plural weekdays and time words as common words, not competing 
   expect([run.linked, run.ambiguous, run.noSubject]).toStrictEqual([1, 0, 0]);
   expect(await f.entities(rota)).toStrictEqual([harbor.id]);
 });
+
+it("a saver's subject hint links claims whose text names no page, at save time and in relink", async () => {
+  const f = await fixture();
+  const hinted = (text: any, about: any, infer_subject = false) =>
+    f.service.remember(
+      {
+        requestId: randomUUID(),
+        attribution: "user in test session, 2026-10-22",
+        excerpt: `User: ${text}`,
+        items: [{ text, kind: "decision", about, infer_subject }],
+      },
+      f.owner,
+    );
+  // Saved before the page exists: nothing to link yet, but the hint is kept.
+  const later = (await hinted("Reload must not restart the Gateway.", "hot reload, PR #180466"))
+    .items[0]!;
+  const rival = (await hinted("Atlas Labs asked for the reload fix.", "bundled plugin hot reload"))
+    .items[0]!;
+  const vague = (await hinted("Ship it before the release.", "Atlas Labs; hot reload")).items[0]!;
+  expect([later.subject, rival.subject, vague.subject]).toStrictEqual(["none", "none", "none"]);
+  const reload = await f.page("Bundled plugin hot reload", "project", {
+    aliases: ["hot reload", "PR #180466"],
+  });
+  await f.page("Atlas Labs", "company");
+
+  const out = await f.relink({});
+  const tier = (id: any) => out.examples.find((e) => e.id === id);
+  expect(tier(later.id)!.tier, "Hint parts naming one page link it").toBe("hint");
+  expect(tier(rival.id)!.tier, "The hint outranks a competing name in the text").toBe("hint");
+  expect(tier(vague.id)!.outcome, "A hint naming two pages links nothing").not.toBe("linked");
+  expect(await f.entities(later.id)).toStrictEqual([reload.id]);
+  expect(await f.entities(rival.id)).toStrictEqual([reload.id]);
+  const saved = (await f.service.record({ id: later.id, includeMetadata: true }, f.owner)).record!;
+  expect(saved.metadata!.subject_hint).toBe("hot reload, PR #180466");
+
+  // With the page present, the hint links at save time with no lookup by the agent.
+  const now = (await hinted("Edited code runs on the next call.", "PR #180466", true)).items[0]!;
+  expect([now.subject, now.subjectId]).toStrictEqual(["inferred", reload.id]);
+});
