@@ -33,6 +33,22 @@ export function memoryIndexCutoff(messages: readonly unknown[], now: number): nu
   return Number.isFinite(at) ? Math.min(at, now) : now;
 }
 
+// Rendered indexes pinned per session incarnation, store binding and cutoff.
+// Edits keep a record's recorded_at, so re-rendering current records could
+// change the system prompt between turns; the pin keeps it byte-stable until
+// compaction or a new session moves the cutoff. Authority is still checked live
+// on every turn before a pinned text is reused. A Gateway restart re-renders
+// once (accepted: one prefix change per restart).
+const MAX_PINNED_INDEXES = 512;
+const pinnedIndexes = new Map<string, string>();
+
+function pinIndex(key: string, text: string): void {
+  pinnedIndexes.set(key, text);
+  if (pinnedIndexes.size > MAX_PINNED_INDEXES) {
+    pinnedIndexes.delete(pinnedIndexes.keys().next().value!);
+  }
+}
+
 // Builds the provider-style caller context from the host-resolved hook audience.
 function callerContext(ctx: HookContext): MemoryCallerContext | undefined {
   const audience = ctx.memoryAudience;
@@ -71,11 +87,18 @@ export async function readMemoryIndex(
   if (opened.kind !== "ready") {
     return "";
   }
-  const { runtime, access } = opened;
+  const { runtime, access, binding } = opened;
+  const key = JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId ?? null, binding, asOf]);
+  const pinned = pinnedIndexes.get(key);
+  if (pinned !== undefined) {
+    access.assertCurrent();
+    return pinned;
+  }
   const result = await runtime.enqueue(access.assertCurrent, () =>
     runtime.client.call("memoryIndex", access, { asOf }),
   );
   access.assertCurrent();
+  pinIndex(key, result.text);
   return result.text;
 }
 

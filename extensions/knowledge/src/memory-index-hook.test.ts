@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import { memoryIndexCutoff } from "./memory-index-hook.js";
 import { memoryFixture } from "./memory-provider.test-support.js";
@@ -32,6 +33,30 @@ it("appends a byte-stable index for owner-private sessions until the cutoff move
     hookContext(f),
   );
   expect(refreshed.appendSystemContext).toContain("Saved during the session");
+});
+
+it("keeps the rendered index byte-stable when a record is renamed mid-session", async () => {
+  const f = await memoryFixture(tempDirs);
+  const saved = await f.save("Original playbook title");
+  const hook = f.hooks.before_prompt_build;
+  const messages = [{ role: "user", timestamp: Date.now(), content: "hi" }];
+  const first = await hook({ prompt: "hi", messages }, hookContext(f));
+  expect(first.appendSystemContext).toContain("Original playbook title");
+  const current = (await f.service.record({ id: saved.id }, f.tool)).record;
+  await f.service.save_page(
+    {
+      requestId: randomUUID(),
+      id: current.id,
+      expectedRevision: current.revision,
+      expectedHash: current.hash,
+      type: "note",
+      title: "Renamed playbook title",
+      body: "Evidence-backed durable note",
+    },
+    f.tool,
+  );
+  const second = await hook({ prompt: "again", messages }, hookContext(f));
+  expect(second.appendSystemContext).toBe(first.appendSystemContext);
 });
 
 it("omits the index for conversation, missing and sandboxed audiences and revoked callers", async () => {
