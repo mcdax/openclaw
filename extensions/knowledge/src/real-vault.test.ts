@@ -251,19 +251,41 @@ it("operator browsing honors the role's agent ceiling and needs an administrator
     ...f.operator,
     action: { client: { ...f.operator.action.client, ...client } },
   });
-  await expect(f.service.records({}, withClient({ agents: ["other"] }))).rejects.toThrow(
+  const allows =
+    (...agents: string[]) =>
+    (agent: string) =>
+      agents.includes(agent);
+  await expect(f.service.records({}, withClient({ allowsAgent: allows("other") }))).rejects.toThrow(
     /does not include agent "main"/,
   );
-  await expect(f.service.records({}, withClient({ sharedGateway: true }))).rejects.toThrow(
+  await expect(f.service.records({}, withClient({ isSharedGateway: () => true }))).rejects.toThrow(
     /requires an administrator/,
   );
   const admin = withClient({
-    agents: ["main"],
-    sharedGateway: true,
+    allowsAgent: allows("main"),
+    isSharedGateway: () => true,
     scopes: ["operator.admin"],
   });
   expect((await f.service.records({}, admin)).total > 0).toBe(true);
-  expect((await f.service.records({}, withClient({ agents: ["main"] }))).total > 0).toBe(true);
+  expect((await f.service.records({}, withClient({ allowsAgent: allows("main") }))).total > 0).toBe(
+    true,
+  );
+});
+
+it("a role or roster change after admission refuses the operator read before disclosure", async () => {
+  const f = await fixture();
+  // Live host checks: admission sees the old policy, every later recheck the new one.
+  let checks = 0;
+  const changed = () => checks++ > 0;
+  const withClient = (client: Record<string, unknown>) => ({
+    ...f.operator,
+    action: { client: { ...f.operator.action.client, ...client } },
+  });
+  await expect(
+    f.service.records({}, withClient({ allowsAgent: () => !changed() })),
+  ).rejects.toThrow();
+  checks = 0;
+  await expect(f.service.records({}, withClient({ isSharedGateway: changed }))).rejects.toThrow();
 });
 
 it("empty conversation scope returns an empty catalog, without creating files or reading private ontology", async () => {

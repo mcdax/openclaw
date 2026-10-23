@@ -52,7 +52,7 @@ export function featurePrincipal(
       // Operators browse an agent's private partition, which session turns
       // reach only with the owner's audience. On a shared Gateway that is an
       // administrator; a role's agent ceiling bounds every operator.
-      if (client.sharedGateway === true && !client.scopes.includes("operator.admin")) {
+      if (client.isSharedGateway?.() === true && !client.scopes.includes("operator.admin")) {
         throw new Error(
           "Knowledge access unavailable: on a shared Gateway, browsing an agent's private knowledge requires an administrator.",
         );
@@ -67,7 +67,7 @@ export function featurePrincipal(
           "Several agents are configured and none is the default; choose which agent's knowledge to view.",
         );
       }
-      if (client.agents && !client.agents.includes(operatorAgent)) {
+      if (client.allowsAgent && !client.allowsAgent(operatorAgent)) {
         throw new Error(
           `Knowledge access unavailable: your operator role does not include agent "${operatorAgent}".`,
         );
