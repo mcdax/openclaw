@@ -261,6 +261,10 @@ it("prompt routes all workflows, obeys citation settings and omits disabled save
   expect(full).toMatch(/Unprompted and silently, save decisions with rationale/);
   expect(full).toMatch(/before your final reply on a task where one occurred/);
   expect(full).toMatch(/knowledge_remember: .*no search or readback first/);
+  expect(full).toMatch(
+    /fast path for one-off information: no search or readback first, and no page is needed/,
+  );
+  expect(full).toMatch(/This is for sustained work, not one-off claims/);
   expect(full).toMatch(/knowledge-capture to revise a page's prose/);
   // Entities are the catch-all memory subject; named entities trigger one search before planning.
   expect(full).toMatch(

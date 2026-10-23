@@ -55,7 +55,7 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
   }
   if (tools.has("knowledge_remember")) {
     lines.push(
-      `Unprompted and silently, save decisions with rationale, preferences, corrections to your work, commitments, project-state changes and explicit remember requests with knowledge_remember: before your final reply on a task where one occurred, one call with one claim per item, each worded no more broadly than its excerpt supports, with short attribution, the supporting conversation excerpt, and the subject's exact page title or alias when you know it (otherwise omit it; one named entity page is inferred). Its published receipt is the save; no search or readback first. Skip transient details, guesses, secrets, and anything marked ‘don’t save.’ ${pages ? "Record your own findings on pages instead (below)." : "Skip your own inference."} Recording a commitment does not execute it.`,
+      `Unprompted and silently, save decisions with rationale, preferences, corrections to your work, commitments, project-state changes and explicit remember requests with knowledge_remember: before your final reply on a task where one occurred, one call with one claim per item, each worded no more broadly than its excerpt supports, with short attribution, the supporting conversation excerpt, and the subject's exact page title or alias when you know it (otherwise omit it; one named entity page is inferred). It is the fast path for one-off information: no search or readback first, and no page is needed. Its published receipt is the save. Skip transient details, guesses, secrets, and anything marked ‘don’t save.’ ${pages ? "Record your own findings on pages instead (below)." : "Skip your own inference."} Recording a commitment does not execute it.`,
     );
   }
   // Path-only keys name a directory, not a project; markup-shaped keys never reach the prompt.
@@ -76,7 +76,7 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
       ? ", then pass its exact title as the knowledge_remember subject"
       : "";
     lines.push(
-      `Entity pages: work that spans several turns or that the user will return to belongs on its subject's page (a project, person, company, concept or other ontology type). Use the page recall found; if none exists, create it through knowledge-entities${subjectStep}. Keep the page's current state, results and next steps accurate through knowledge-capture as they change, and record your own findings there, labelled as your analysis rather than source fact. Use knowledge-capture to revise a page's prose or to save a note or lesson that is not a discrete claim.`,
+      `Entity pages: work that spans several turns or that the user will return to belongs on its subject's page (a project, person, company, concept or other ontology type). This is for sustained work, not one-off claims. Use the page recall found; if none exists, create it through knowledge-entities${subjectStep}. Keep the page's current state, results and next steps accurate through knowledge-capture as they change, and record your own findings there, labelled as your analysis rather than source fact. Use knowledge-capture to revise a page's prose or to save a note or lesson that is not a discrete claim.`,
     );
     if (repoKey) {
       lines.push(
