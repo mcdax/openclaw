@@ -95,3 +95,8 @@ Each pass logs one summary line, as a warning if any store failed.
 Relink adapts the free `page` and `mention` tiers of gbrain's relink. It has no
 model tier: a claim that cannot be resolved stays unlinked rather than receiving
 an unsupported guess.
+
+The `knowledge-unlinked-claims` skill is the agent workflow for the claims relink
+leaves unlinked. It chooses subject pages with judgment, creates pages for
+substantial missing subjects, retires exact duplicates and explicitly replaced
+claims, and folds durable outcomes into page State.

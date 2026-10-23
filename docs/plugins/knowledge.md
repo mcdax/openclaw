@@ -196,19 +196,20 @@ See [Tools](/plugins/knowledge/tools) for inputs, limits, and pagination.
 
 ## Bundled skills
 
-Knowledge ships eight skills. They are agent workflows over the tools above, not
+Knowledge ships nine skills. They are agent workflows over the tools above, not
 an autonomous ingestion engine.
 
-| Skill                      | Use                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| `knowledge-automation`     | Create and verify scheduled ingestion through the host scheduler with a retained authorized worker. |
-| `knowledge-capture`        | Save decisions, preferences, facts, and short notes with attribution and readback.                  |
-| `knowledge-correct`        | Correct or withdraw exact records and inspect affected knowledge.                                   |
-| `knowledge-entities`       | Resolve and enrich people, companies, projects, and concepts with sourced profiles.                 |
-| `knowledge-ingest`         | Ingest documents, articles, and conversations with retained originals and cross-links.              |
-| `knowledge-meeting-ingest` | Ingest meeting transcripts with attendee enrichment, decisions, commitments, and chronology checks. |
-| `knowledge-recall`         | Answer from saved knowledge with inspectable citations. Read-only.                                  |
-| `knowledge-source-ingest`  | Incrementally ingest enumerable sources with snapshot manifests and diffing.                        |
+| Skill                       | Use                                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `knowledge-automation`      | Create and verify scheduled ingestion through the host scheduler with a retained authorized worker. |
+| `knowledge-capture`         | Save decisions, preferences, facts, and short notes with attribution and readback.                  |
+| `knowledge-correct`         | Correct or withdraw exact records and inspect affected knowledge.                                   |
+| `knowledge-entities`        | Resolve and enrich people, companies, projects, and concepts with sourced profiles.                 |
+| `knowledge-ingest`          | Ingest documents, articles, and conversations with retained originals and cross-links.              |
+| `knowledge-meeting-ingest`  | Ingest meeting transcripts with attendee enrichment, decisions, commitments, and chronology checks. |
+| `knowledge-recall`          | Answer from saved knowledge with inspectable citations. Read-only.                                  |
+| `knowledge-source-ingest`   | Incrementally ingest enumerable sources with snapshot manifests and diffing.                        |
+| `knowledge-unlinked-claims` | Link claims relink left unlinked, create missing pages, retire duplicates, and update page State.   |
 
 See [Ingestion workflows](/plugins/knowledge/ingestion).
 

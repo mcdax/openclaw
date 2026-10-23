@@ -17,6 +17,7 @@ const names = [
   "knowledge-meeting-ingest",
   "knowledge-recall",
   "knowledge-source-ingest",
+  "knowledge-unlinked-claims",
 ];
 
 it("packaged skills have discoverable metadata and self-contained readable references", async () => {
