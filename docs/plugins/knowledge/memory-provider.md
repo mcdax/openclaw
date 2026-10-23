@@ -62,15 +62,25 @@ run.
 
 ## Memory prompt
 
-The selected-provider prompt asks the agent to:
+The selected-provider prompt describes Knowledge as the user's world knowledge:
+entities (people, companies, projects, repositories, concepts and anything else
+the active ontology can represent) and what is known about them. It asks the
+agent to:
 
-- recall proactively with lookup, search, and record reads when prior work,
-  people, projects, preferences, decisions, or commitments matter;
+- search once for any entity a task names, or earlier work it refers to, before
+  planning, and follow the knowledge-recall skill for deeper questions;
 - save decisions, preferences, corrections, commitments, project-state changes,
   and explicit remember requests with `knowledge_remember` before the final reply,
-  without being prompted;
-- route procedures to the bundled skills when those skills and their tools are
-  available;
+  without being prompted, worded no more broadly than the supporting excerpt;
+- keep a page for work that spans turns or that the user will return to: reuse
+  the page recall found or create it through knowledge-entities, keep its
+  current state accurate through knowledge-capture, and record the agent's own
+  findings there as analysis rather than in `knowledge_remember`, which never
+  stores agent inference;
+- record replacements and contradictions with knowledge-correct instead of
+  parallel claims;
+- route documents, transcripts and entity work to the bundled skills when those
+  skills and their tools are available;
 - cite saved records with links to the Knowledge page in the Control UI.
 
 When writes are disabled or the save tools are missing, the prompt omits save

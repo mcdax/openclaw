@@ -15,23 +15,34 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
   if (!reads && !recall) {
     return [];
   }
-  const routes = [
-    grep && "knowledge_grep for searches, including people, projects and pages",
-    lookup &&
-      "knowledge_lookup only when the exact record ID, full title or declared alias is already known",
-    record && "knowledge_record for supporting evidence",
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const searchStep = grep
+    ? "run knowledge_grep on that name once"
+    : "look it up with knowledge_lookup";
+  const readStep = record ? " and read the best matching page with knowledge_record" : "";
+  const pages =
+    record &&
+    tools.has("knowledge_save_page") &&
+    tools.has("knowledge_status") &&
+    tools.has("knowledge_ontology") &&
+    (lookup || grep);
   const lines = ["## Knowledge Memory"];
   if (reads) {
     lines.push(
-      `Knowledge is your durable memory. Recall proactively when prior work, people, projects, preferences, decisions, or commitments could improve your response. Reuse sufficient retrieved evidence; otherwise follow the available knowledge-recall skill: ${routes}. Check memory before asking the user to repeat information.`,
+      "Knowledge is your durable memory of the user's world: entities (people, companies, projects, repositories, concepts and any other thing the active ontology can represent) and the facts, decisions, preferences and lessons about them.",
     );
+    if (lookup || grep) {
+      lines.push(
+        `Recall: before planning a task that names an entity or refers to earlier work, ${searchStep}${readStep}. Also check memory before asking the user to repeat information. For deeper questions follow the knowledge-recall skill.`,
+      );
+    } else {
+      lines.push(
+        "Recall: when an entity or earlier work matters, read its record with knowledge_record. Check memory before asking the user to repeat information.",
+      );
+    }
   }
   if (lookup && grep) {
     lines.push(
-      "If knowledge_lookup returns missing, use knowledge_grep before concluding that no relevant record exists; lookup does not perform keyword search.",
+      "Use knowledge_lookup only for an exact record ID, full title or declared alias; if it returns missing, use knowledge_grep before concluding that no relevant record exists.",
     );
   }
   if (recall) {
@@ -44,7 +55,7 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
   }
   if (tools.has("knowledge_remember")) {
     lines.push(
-      "Unprompted and silently, save decisions with rationale, preferences, corrections to your work, commitments, project-state changes and explicit remember requests with knowledge_remember: before your final reply on a task where one occurred, one call with one claim per item, short attribution, the supporting conversation excerpt, and a subject only when you know its exact page title or alias (otherwise omit it; one named entity page is inferred). Its published receipt is the save; no search or readback first. Skip transient details, guesses, your own inference, secrets, and anything marked ‘don’t save.’ Recording a commitment does not execute it.",
+      `Unprompted and silently, save decisions with rationale, preferences, corrections to your work, commitments, project-state changes and explicit remember requests with knowledge_remember: before your final reply on a task where one occurred, one call with one claim per item, each worded no more broadly than its excerpt supports, with short attribution, the supporting conversation excerpt, and the subject's exact page title or alias when you know it (otherwise omit it; one named entity page is inferred). Its published receipt is the save; no search or readback first. Skip transient details, guesses, secrets, and anything marked ‘don’t save.’ ${pages ? "Record your own findings on pages instead (below)." : "Skip your own inference."} Recording a commitment does not execute it.`,
     );
   }
   // Path-only keys name a directory, not a project; markup-shaped keys never reach the prompt.
@@ -60,15 +71,12 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
       `This run's repository key is \`${repoKey}\`, an alias of its project page: pass it as the knowledge_remember subject for claims about this repository's work, and omit it for claims about anything else.`,
     );
   }
-  if (
-    record &&
-    tools.has("knowledge_save_page") &&
-    tools.has("knowledge_status") &&
-    tools.has("knowledge_ontology") &&
-    (lookup || grep)
-  ) {
+  if (pages) {
+    const subjectStep = tools.has("knowledge_remember")
+      ? ", then pass its exact title as the knowledge_remember subject"
+      : "";
     lines.push(
-      "Use knowledge-capture to revise a page's prose or to save a note or lesson that is not a discrete claim.",
+      `Entity pages: work that spans several turns or that the user will return to belongs on its subject's page (a project, person, company, concept or other ontology type). Use the page recall found; if none exists, create it through knowledge-entities${subjectStep}. Keep the page's current state, results and next steps accurate through knowledge-capture as they change, and record your own findings there, labelled as your analysis rather than source fact. Use knowledge-capture to revise a page's prose or to save a note or lesson that is not a discrete claim.`,
     );
     if (repoKey) {
       lines.push(
@@ -81,12 +89,12 @@ export const buildKnowledgeMemoryPrompt: Prompt = (params) => {
       tools.has("knowledge_verify")
     ) {
       lines.push(
-        "Use available skills: knowledge-ingest for documents, knowledge-meeting-ingest for transcripts, knowledge-entities for profiles.",
+        "Use available skills: knowledge-ingest for documents, knowledge-meeting-ingest for transcripts, knowledge-entities for creating and enriching entity pages.",
       );
     }
     if (tools.has("knowledge_correct") && tools.has("knowledge_withdraw")) {
       lines.push(
-        "Use knowledge-correct for corrections or withdrawal; preserve history rather than silently overwrite conflicting evidence.",
+        "When new information replaces or contradicts what memory holds, record the change with knowledge-correct rather than saving a parallel claim; preserve history rather than silently overwrite conflicting evidence.",
       );
     }
     if (tools.has("knowledge_merge")) {

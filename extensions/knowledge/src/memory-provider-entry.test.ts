@@ -262,6 +262,20 @@ it("prompt routes all workflows, obeys citation settings and omits disabled save
   expect(full).toMatch(/before your final reply on a task where one occurred/);
   expect(full).toMatch(/knowledge_remember: .*no search or readback first/);
   expect(full).toMatch(/knowledge-capture to revise a page's prose/);
+  // Entities are the catch-all memory subject; named entities trigger one search before planning.
+  expect(full).toMatch(
+    /user's world: entities \(.*any other thing the active ontology can represent\)/,
+  );
+  expect(full).toMatch(
+    /before planning a task that names an entity or refers to earlier work, run knowledge_grep/,
+  );
+  // Sustained work gets a maintained entity page; findings go there, not into source-claim remembering.
+  expect(full).toMatch(
+    /Entity pages: work that spans several turns.*create it through knowledge-entities/,
+  );
+  expect(full).toMatch(/record your own findings there, labelled as your analysis/);
+  expect(full).toMatch(/Record your own findings on pages instead/);
+  expect(full).toMatch(/worded no more broadly than its excerpt supports/);
   const readOnly = await memoryFixture(tempDirs, { writesEnabled: false });
   expect(readOnly.capability!.promptBuilder({ availableTools: tools }).join("\n")).not.toMatch(
     /knowledge_remember|knowledge-capture|knowledge-correct|knowledge_recall only/,
@@ -272,6 +286,14 @@ it("prompt routes all workflows, obeys citation settings and omits disabled save
   }).join("\n");
   expect(partial).not.toMatch(/knowledge_record|knowledge_lookup|knowledge-capture/);
   expect(partial).toMatch(/Citations are disabled/);
+  expect(partial).toMatch(
+    /names an entity or refers to earlier work, run knowledge_grep on that name once\./,
+  );
+  const rememberWithoutPages = buildKnowledgeMemoryPrompt({
+    availableTools: new Set(["knowledge_grep", "knowledge_remember"]),
+  }).join("\n");
+  expect(rememberWithoutPages).toMatch(/Skip your own inference/);
+  expect(rememberWithoutPages).not.toMatch(/Entity pages|on pages instead/);
   expect(
     buildKnowledgeMemoryPrompt({ availableTools: new Set(["knowledge_recall"]) }).join("\n"),
   ).toMatch(/owner asks.*recalled automatically/);
