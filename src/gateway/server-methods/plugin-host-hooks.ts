@@ -148,7 +148,6 @@ export const pluginHostHookHandlers: GatewayRequestHandlers = {
             return;
           }
         }
-        const roleAgents = resolveOperatorRoleAgents(client ?? null, context.getRuntimeConfig());
         const result = await registration.action.handler({
           pluginId,
           actionId,
@@ -158,8 +157,16 @@ export const pluginHostHookHandlers: GatewayRequestHandlers = {
           client: {
             ...(client?.connId ? { connId: client.connId } : {}),
             scopes: [...scopes],
-            ...(roleAgents ? { agents: [...roleAgents] } : {}),
-            ...(hasMultipleResidentSessionSharingIdentities() ? { sharedGateway: true } : {}),
+            // Live policy, not snapshots: role config and the profile roster can
+            // change while an awaited action runs, and handlers check right before effects.
+            allowsAgent: (agentId: string) => {
+              const roleAgents = resolveOperatorRoleAgents(
+                client ?? null,
+                context.getRuntimeConfig(),
+              );
+              return !roleAgents || roleAgents.includes(agentId);
+            },
+            isSharedGateway: () => hasMultipleResidentSessionSharingIdentities(),
           },
         });
         if (result !== undefined && !isRecord(result)) {
