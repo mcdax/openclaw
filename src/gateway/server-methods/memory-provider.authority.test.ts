@@ -121,6 +121,18 @@ describe("memory provider reads through Gateway dispatch", () => {
     expectRpcResult(admin, expect.objectContaining({ agentId: "main" }));
   });
 
+  it("refuses a content read before provider I/O when the Gateway becomes shared during open", async () => {
+    open.mockImplementation(async (input) => {
+      sharedGateway = true;
+      input.context.assertCurrent();
+      return { provider };
+    });
+    expectRpcError(await call("memory.search", searchParams), {
+      message: expect.stringContaining("requires an administrator"),
+    });
+    expect(provider.search).not.toHaveBeenCalled();
+  });
+
   it.each([
     { method: "memory.search", client: () => cliClient([]), message: "operator.read" },
     {

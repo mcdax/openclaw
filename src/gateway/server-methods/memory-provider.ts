@@ -210,9 +210,20 @@ async function handleMemoryProviderRequest(options: GatewayRequestHandlerOptions
   try {
     assertRequestCurrent();
     captured = await captureMemoryReadAuthority(options, assertRequestCurrent);
-    const { assertCurrent } = captured;
+    const { scopes, assertCurrent: assertCapturedCurrent } = captured;
+    // The provider calls this right before each effect, so a role or roster
+    // change during open or search still refuses a read the policy now forbids.
+    const assertCurrent = () => {
+      assertCapturedCurrent();
+      assertOperatorMemoryAccess({
+        client,
+        cfg: context.getRuntimeConfig(),
+        agentId,
+        operation,
+        scopes,
+      });
+    };
     assertCurrent();
-    assertOperatorMemoryAccess({ client, cfg, agentId, operation, scopes: captured.scopes });
     const acquired = await getActiveMemoryProviderCore({
       cfg,
       agentId,
