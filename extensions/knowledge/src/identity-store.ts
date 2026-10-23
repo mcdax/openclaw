@@ -20,6 +20,7 @@ import { Check } from "typebox/value";
 import type { IdentityStore } from "./real-vault.js";
 import {
   ensureKnowledgeSchema,
+  isKnowledgeSchemaCurrent,
   UnrecognizedSchema,
   type KnowledgeSchema,
 } from "./storage-schema.js";
@@ -182,9 +183,15 @@ export class SqliteIdentityStore implements IdentityStore {
       if (before.dev !== after.dev || before.ino !== after.ino || after.nlink !== 1) {
         throw unavailable();
       }
-      // A replaced or restored file has a new inode and is admitted again.
+      // A replaced or restored file usually has a new inode and is admitted
+      // again. Filesystems recycle freed inodes, so an admitted inode must
+      // also still carry the current stamp; a stale or new file is re-admitted.
       const physical = `${after.dev}:${after.ino}`;
-      if (created || !admitted.has(physical)) {
+      if (
+        created ||
+        !admitted.has(physical) ||
+        !isKnowledgeSchemaCurrent(db, stateSchema(this.filename))
+      ) {
         this.admit(db, created);
         admitted.add(physical);
       }

@@ -36,6 +36,11 @@ function stampedVersion(db: DatabaseSync, store: string): number | undefined {
   return row?.version;
 }
 
+/** Whether a database already carries this schema's latest stamp. */
+export function isKnowledgeSchemaCurrent(db: DatabaseSync, schema: KnowledgeSchema): boolean {
+  return stampedVersion(db, schema.store) === schema.steps.at(-1)!.version;
+}
+
 /** Bring a Knowledge database to the latest schema version and stamp it.
  * Stores created before stamping are dated by their tables, so existing
  * databases keep working; their native header fields are left untouched. */

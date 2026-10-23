@@ -103,6 +103,21 @@ it.each([1, 2, 3, 4, 5])(
   },
 );
 
+it("a legacy database written into an already admitted inode is admitted again", async () => {
+  const dir = tempDirs.make("knowledge-schema-");
+  const file = path.join(dir, "state.sqlite");
+  const store = new SqliteIdentityStore(file);
+  await store.registerIfAbsent("store:new", manifest());
+  // copyFile truncates and rewrites the destination in place, keeping its
+  // inode: the same identity a recycled inode presents after delete/recreate.
+  const legacy = path.join(dir, "legacy.sqlite");
+  const value = manifest();
+  legacyState(legacy, 1, value);
+  await copyFile(legacy, file);
+  expect(await new SqliteIdentityStore(file).lookup("store:legacy")).toStrictEqual(value);
+  expect(inspect(file).stamp).toEqual([{ store: "state", version: 5 }]);
+});
+
 it("a new state database has the full schema and durable connection defaults", async () => {
   const file = path.join(tempDirs.make("knowledge-schema-"), "state.sqlite");
   const store = new SqliteIdentityStore(file);
