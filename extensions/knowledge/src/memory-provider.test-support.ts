@@ -24,6 +24,7 @@ export async function memoryFixture(tempDirs: { make(prefix: string): string }, 
   let capability: any,
     active = true;
   const services: any = [];
+  const hooks: Record<string, any> = {};
   const api = apiFor(
     base,
     {
@@ -42,6 +43,9 @@ export async function memoryFixture(tempDirs: { make(prefix: string): string }, 
         },
         registerService(s: any) {
           services.push(s);
+        },
+        on(name: string, handler: any) {
+          hooks[name] = handler;
         },
       },
     },
@@ -102,6 +106,7 @@ export async function memoryFixture(tempDirs: { make(prefix: string): string }, 
     api,
     service,
     services,
+    hooks,
     open,
     save,
     recall,

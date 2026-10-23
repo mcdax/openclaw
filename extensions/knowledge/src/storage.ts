@@ -13,6 +13,7 @@ import type { ConnectionsInput } from "./connections-contract.js";
 import { connections } from "./connections.js";
 import { EvidenceReadInput } from "./evidence-read-contract.js";
 import { VerifyInput, type VerifyOutput } from "./ingestion-contract.js";
+import { buildMemoryIndex } from "./memory-index.js";
 import { approvedRecall } from "./model.js";
 import { recentActivity } from "./recent-activity.js";
 import type { RecentInput } from "./recent.js";
@@ -209,6 +210,20 @@ export class KnowledgeStorage extends StorageIngestion {
       }
       access.assertCurrent();
       return result;
+    });
+  }
+  /** Renders the standing index of this partition's current records as of `asOf`. */
+  async memoryIndex(input: { asOf: number }, access: VaultAccess) {
+    if (!Number.isFinite(input.asOf)) {
+      throw new Error("Invalid memory index cutoff.");
+    }
+    return this.run(access, async (vault) => {
+      const data = await vault.scan();
+      const records = this.store.withDatabase((db) =>
+        eligible(data, withdrawnIds(db, this.retrievalBinding(access)), false),
+      );
+      access.assertCurrent();
+      return { text: buildMemoryIndex(records, input.asOf) };
     });
   }
   /** Read temporal projections within the same authority and identity fence as search. */

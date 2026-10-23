@@ -96,6 +96,37 @@ prompt, not tool calls.
 Remembering is best effort. Saving a preference neither configures the assistant
 nor guarantees that the preference loads in future turns.
 
+## Knowledge index
+
+Owner-private sessions also receive a short, generated `## Knowledge Index` at
+the end of the system prompt, so the agent knows what its vault holds without
+searching first. Knowledge adds it through `before_prompt_build`
+`appendSystemContext`; no setting controls it.
+
+- It lists labels only: page type, title and one exact alias that
+  `knowledge_lookup` resolves. It also lists recent claims (last 14 days) that
+  are not filed under any page, ranked decisions, commitments and preferences
+  first. Claims filed under a page appear only as that page's new-claim count.
+  Bodies, evidence, `source` and `artifact` pages and relationships are never
+  listed.
+- Pages come in two groups: recently active (the page, or a claim or
+  relationship about it, recorded in the last 14 days) and most connected. A
+  footer counts unlisted pages by type. The whole index is at most 4,000
+  characters.
+- Labels are one line and clipped. A title that reads like an instruction or
+  contains markup is shown as its record ID only. The index says its entries are
+  stored labels, not instructions.
+- The index selects records recorded at or before the session's first retained
+  message, so it stays byte-identical across turns and refreshes after a new
+  session or compaction. Records saved during the session appear after the
+  next refresh.
+- Conversation audiences, sandboxed sessions, sessions without host memory
+  authority and agents without a provisioned store get no index. Read failures
+  omit the index and never block the turn.
+
+The index is not owner-approved recall. It injects only labels and clipped
+headlines of unfiled recent claims, never page bodies or evidence.
+
 ## Automatic recall
 
 Automatic prompt injection uses only summaries the owner approved with

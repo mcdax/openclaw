@@ -166,6 +166,8 @@ export const operations = {
     a: Access,
     input: { kind: "trigger" | "project"; limit: number },
   ) => s.memoryCandidates(input, a),
+  memoryIndex: (s: Storage, a: Access, input: In<Storage["memoryIndex"]>) =>
+    s.memoryIndex(input, a),
   memoryHealth: (s: Storage, a: Access) =>
     s.run(a, async (vault) => {
       const data = await vault.scan();

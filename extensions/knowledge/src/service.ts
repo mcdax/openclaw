@@ -19,6 +19,7 @@ import {
 } from "./limits.js";
 import { Maintenance } from "./maintenance.js";
 import { buildKnowledgeMemoryFlushPlan } from "./memory-flush.js";
+import { registerMemoryIndexHook } from "./memory-index-hook.js";
 import { buildKnowledgeMemoryPrompt } from "./memory-prompt.js";
 import { createKnowledgeMemoryRuntime } from "./memory-provider.js";
 import { locatePluginFiles } from "./plugin-files.js";
@@ -118,6 +119,9 @@ export function createKnowledgeService(
       providerFlushPlanResolver: () =>
         policy.writesEnabled ? buildKnowledgeMemoryFlushPlan() : null,
     });
+  }
+  if (typeof api.on === "function") {
+    registerMemoryIndexHook(api, stores);
   }
   const maintenance = new Maintenance(stores, {
     info: (m) => api.logger?.info?.(m),
