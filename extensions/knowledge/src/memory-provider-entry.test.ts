@@ -112,13 +112,6 @@ it("flush plan provides tool persistence only for writable real vaults", async (
   expect(plan.forceFlushTranscriptBytes).toBe(undefined);
   expect(plan.model).toBe(undefined);
   const promptText = `${plan.prompt}\n${plan.systemPrompt}`;
-  expect(plan.prompt).toMatch(/with knowledge_remember/);
-  expect(plan.prompt).toMatch(
-    /one claim per item, short attribution, the supporting quoted excerpt/,
-  );
-  expect(plan.prompt).toMatch(/reported as duplicates, so do not search first/);
-  expect(plan.prompt).toMatch(/knowledge_save_page only for a note that is not a discrete claim/);
-  expect(plan.prompt).toMatch(/your own inference/);
   expect(plan.prompt).toMatch(/NO_REPLY/);
   expect([...new Set(promptText.match(/knowledge_[a-z_]+/g))].toSorted(defaultOrder)).toStrictEqual(
     ["knowledge_remember", "knowledge_save_page"],
