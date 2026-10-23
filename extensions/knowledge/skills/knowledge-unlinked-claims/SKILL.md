@@ -18,12 +18,12 @@ this order: link, then duplicates and replaced claims, then page prose.
 ## 1. Enumerate the residue
 
 Call `knowledge_status` for the intended scope and `knowledge_ontology` for the
-current fingerprint. List unlinked claims with `knowledge_relink` `dryRun: true`
-and `limit: 10`, following `nextCursor`. Each call reports at most 10 examples per
-outcome, so a limit of 10 returns every claim it examined. Keep the `ambiguous`
-and `no_subject` IDs. Anything reported as `linked` will be handled by the next
-maintenance pass; run `knowledge_relink` without `dryRun` first if it should be
-linked now.
+current fingerprint. Run `knowledge_relink` without `dryRun` first so every
+remembered claim it can link is linked. Then list the residue with
+`knowledge_relink` `dryRun: true`, `include: "all"` and `limit: 10`, following
+`nextCursor`: every current claim with no linked page and no source page,
+whichever tool saved it. Each call reports at most 10 examples per outcome, so a
+limit of 10 returns every claim it examined.
 
 Read each claim with `knowledge_record` and `metadataView: "full"`. Its
 `subject_hint`, when present, is the saver's own description of what the claim

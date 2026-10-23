@@ -202,8 +202,12 @@ it("relink ignores claims that knowledge_remember did not save", async () => {
   expect(out.scanned).toBe(0);
   expect(
     await f.entities(authored.id),
-    "Deliberately unlinked authored claims are not maintenance targets",
+    "Deliberately unlinked authored claims are not relink targets",
   ).toBe(undefined);
+  // The review still needs to see them: include "all" lists every claim no page reaches.
+  const listed = await f.relink({ dryRun: true, include: "all" });
+  expect(listed.examples.map((e) => e.id)).toContain(authored.id);
+  await expect(f.service.relink({ include: "all" }, f.owner)).rejects.toThrow(/requires dryRun/);
 });
 
 it("relink treats plural weekdays and time words as common words, not competing names", async () => {

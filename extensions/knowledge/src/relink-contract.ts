@@ -18,6 +18,12 @@ export const RelinkInput = Type.Object(
         description: "Unlinked claims to examine in this call; default 100.",
       }),
     ),
+    include: Type.Optional(
+      Type.Union([Type.Literal("remembered"), Type.Literal("all")], {
+        description:
+          "remembered (default): claims knowledge_remember saved unlinked. all: every current claim with no linked page and no source page, for review; requires dryRun.",
+      }),
+    ),
     cursor: Type.Optional(
       Type.String({
         maxLength: 96,

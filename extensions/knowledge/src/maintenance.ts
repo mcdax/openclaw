@@ -167,12 +167,13 @@ export class Maintenance {
             result.ambiguous += out.ambiguous;
             result.noSubject += out.noSubject;
             result.failed += out.failed;
-            // Only the private partition is reachable from the owner's review session.
-            if (scope.visibility === "private") {
-              pending += out.ambiguous + out.noSubject + out.failed;
-            }
             cursor = out.nextCursor ?? undefined;
           } while (cursor);
+          // The review handles every private claim no page reaches, not only remembered ones;
+          // only the private partition is reachable from the owner's review session.
+          if (scope.visibility === "private" && this.stores.policy.maintenance.reviewJobId) {
+            pending += await this.unlinked(runtime, access);
+          }
           // A pass that linked nothing changed nothing; do not make open views refresh.
           if (linked && scope.visibility === "private") {
             runtime.live.invalidate();
@@ -206,6 +207,28 @@ export class Maintenance {
     this.log[failed.length ? "warn" : "info"](
       `Knowledge maintenance (${trigger}): ${run.linked} claims linked across ${vaults.filter((v) => v.outcome === "ok").length} stores${failed.length ? `; ${failed.length} failed: ${failed.map((v) => `${v.label}: ${v.message}`).join("; ")}` : ""}${review ? `; review ${review.outcome} (${review.pending} unlinked)` : ""}.`,
     );
+  }
+
+  /** Count claims no page reaches in one partition, after relink. */
+  private async unlinked(
+    runtime: ReturnType<Stores["openMaintenance"]>["runtime"],
+    access: ReturnType<Stores["openMaintenance"]>["access"],
+  ) {
+    let cursor: string | undefined,
+      total = 0;
+    do {
+      const out: RelinkOutput = await runtime.enqueue(access.assertCurrent, () =>
+        runtime.client.call("maintenanceRelink", access, {
+          dryRun: true,
+          include: "all",
+          limit: RELINK_PAGE,
+          ...(cursor ? { cursor } : {}),
+        }),
+      );
+      total += out.scanned;
+      cursor = out.nextCursor ?? undefined;
+    } while (cursor);
+    return total;
   }
 
   /**

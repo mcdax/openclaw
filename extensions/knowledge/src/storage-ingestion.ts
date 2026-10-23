@@ -12,7 +12,7 @@ import {
   type RelinkExample,
   type RelinkOutput,
 } from "./relink-contract.js";
-import { planRelink, relinkRequestId, unlinkedRemembered } from "./relink.js";
+import { planRelink, relinkRequestId, unlinkedClaims } from "./relink.js";
 import {
   RememberInput,
   REMEMBER_EXCERPT_MAX_BYTES,
@@ -364,7 +364,12 @@ export class StorageIngestion extends StorageLifecycle {
     }
     access.assertCurrent();
     const dryRun = input.dryRun ?? false,
-      limit = input.limit ?? 100;
+      limit = input.limit ?? 100,
+      include = input.include ?? "remembered";
+    // Relink writes only remembered claims; others were saved unlinked on purpose.
+    if (include === "all" && !dryRun) {
+      throw new Error('include: "all" lists claims for review and requires dryRun: true.');
+    }
     if (!dryRun && !this.config.writesEnabled) {
       throw new Error("Knowledge writes are disabled.");
     }
@@ -375,7 +380,7 @@ export class StorageIngestion extends StorageLifecycle {
           withdrawnIds(db, this.retrievalBinding(access)),
         );
       const active = eligible(data, withdrawn, false);
-      const pending = unlinkedRemembered(active).filter(
+      const pending = unlinkedClaims(active, include).filter(
         (r) => input.cursor === undefined || r.id > input.cursor,
       );
       const batch = pending.slice(0, limit);

@@ -42,6 +42,9 @@ writes enabled.
   publishing. Run it first.
 - `limit` (1–500, default 100) bounds how many unlinked claims one call examines.
 - Follow `nextCursor` with the same `dryRun` value until it is `null`.
+- `include: "all"` (dry run only) lists every current claim with no linked page
+  and no source page, whichever tool saved it. Relink links only remembered
+  claims; the rest are for review.
 
 ## Schedule
 
@@ -102,7 +105,8 @@ an unsupported guess.
 Relink leaves claims that name no page, or more than one. An operator can hand
 those to an agent: set `maintenance.reviewJobId` to an automation whose agent
 turn follows the `knowledge-unlinked-claims` skill. After a pass that leaves
-private remembered claims unlinked, maintenance queues that automation once. It
+private claims with no linked page and no source page, whichever tool saved
+them, maintenance queues that automation once. It
 does not queue it when nothing is left, and a disabled automation does not run.
 The last pass reports the review's outcome (`enqueued`, `not_needed`, `skipped`,
 `unavailable`, or `failed`) and how many claims were left.

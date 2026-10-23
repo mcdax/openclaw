@@ -18,8 +18,15 @@ export type RelinkPlan = {
 /** knowledge_remember cites the retained conversation excerpt it uploads under its request ID. */
 const REMEMBERED_EXCERPT = /^artifacts\/[a-f0-9-]{36}\/excerpt\.txt$/;
 
-/** Current claims knowledge_remember saved without a subject, in stable ID order. */
-export function unlinkedRemembered(active: readonly LoadedRecord[]): LoadedRecord[] {
+/**
+ * Current unlinked claims in stable ID order. `remembered` selects claims
+ * knowledge_remember saved without a subject (relink's targets); `all` selects
+ * every claim reachable from no page: no linked page and no source page.
+ */
+export function unlinkedClaims(
+  active: readonly LoadedRecord[],
+  include: "remembered" | "all" = "remembered",
+): LoadedRecord[] {
   return active
     .filter(
       (r) =>
@@ -27,7 +34,9 @@ export function unlinkedRemembered(active: readonly LoadedRecord[]): LoadedRecor
         r.lifecycle === "active" &&
         r.valid &&
         !r.metadata.entities?.length &&
-        (r.metadata.evidence ?? []).some((e) => REMEMBERED_EXCERPT.test(e.path)),
+        (include === "all"
+          ? !r.metadata.source_page
+          : (r.metadata.evidence ?? []).some((e) => REMEMBERED_EXCERPT.test(e.path))),
     )
     .toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
