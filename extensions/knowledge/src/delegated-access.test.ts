@@ -80,8 +80,8 @@ it("host audiences map identically for native tools and provider access", () => 
 
 it("missing, foreign, sandboxed, host, and revoked authority is denied", () => {
   const missing = authority(undefined);
-  expect(missing.access).toThrow(/authority/);
-  expect(() => memoryScope(missing.memory)).toThrow(/authority/);
+  expect(missing.access).toThrow(/no memory audience/);
+  expect(() => memoryScope(missing.memory)).toThrow(/no memory audience/);
   // Another agent's audience resolves that agent, never the requested one.
   const foreign = authority({ kind: "owner-private", agentId: "other" });
   expect(foreign.access().agentId).toBe("other");
